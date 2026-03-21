@@ -123,6 +123,8 @@ Main endpoint:
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1-20) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right-vertical` | `center` |
 
+All rendered ratings are normalized to a `0-10` display scale for `poster`, `backdrop`, and `logo` outputs. Providers that already use `/10` are shown without the suffix, percentage sources are converted to decimal (`69%` -> `6.9`), `/5` sources are doubled (`4.2/5` -> `8.4`), and `/4` sources are multiplied by `2.5`.
+
 ### Supported ID Formats
 
 ERDB supports multiple formats to identify media:
@@ -240,9 +242,9 @@ https://YOUR_ERDB_HOST/proxy/{config}/manifest.json
 - The `url` field must point to the original addon's `manifest.json`.
 - `tmdbKey` and `mdblistKey` are required.
 
-https://github.com/user-attachments/assets/cb70624f-75c8-49da-96fc-b7f6e177df98
+https://github.com/user-attachments/assets/5e1e2496-509a-4b85-ab45-d1f406576af4
 
-https://github.com/user-attachments/assets/b041ae36-c2d1-44ee-9daa-c92f72409a8b
+https://github.com/user-attachments/assets/2385d7a1-c5da-4240-b016-d2880c6d1184
 
 © 2026 ERDB Project
 
