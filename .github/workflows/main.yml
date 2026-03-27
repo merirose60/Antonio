@@ -1,0 +1,22 @@
+name: 'Sync (ogni ora)' 
+on: 
+  schedule: 
+    - cron:  '0 * * * *' 
+ 
+  workflow_dispatch:  # click the button on the GitHub repo! 
+    inputs: 
+      sync_test_mode: # Adds a boolean option that appears during manual workflow run for easy test mode config 
+        description: 'Fork Sync Test Mode' 
+        type: boolean 
+        default: false 
+ 
+jobs: 
+  sync_latest_from_upstream: 
+    runs-on: ubuntu-latest 
+    name: Sync latest commits from upstream repo 
+ 
+    steps: 
+    # REQUIRED step 
+    # Step 1: run a standard checkout action 
+    - name: Checkout target repo 
+      uses: taiki-e/checkout-action@v1.4.1 
