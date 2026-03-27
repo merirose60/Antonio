@@ -7,6 +7,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      ERDB_WORKERS: ${ERDB_WORKERS:-auto}
       PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
       TMDB_API_KEY: ${TMDB_API_KEY}
       MDBLIST_API_KEYS: ${MDBLIST_API_KEYS}
