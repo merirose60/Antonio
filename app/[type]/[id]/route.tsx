@@ -36,7 +36,7 @@ import {
   normalizeRatingStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
-import { getImdbRatingFromDataset } from '@/lib/imdbDataset';
+import { findImdbEpisodeBySeriesSeasonEpisode, getImdbEpisodeFromDataset, getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 // Removed mdblistRequestLogs import
 
@@ -1646,6 +1646,67 @@ const resolveTvdbEpisodeToTmdb = async (
     showId: String(showId),
     season: Number.isFinite(seasonNumber) ? String(seasonNumber) : null,
     episode: Number.isFinite(episodeNumber) ? String(episodeNumber) : null,
+  };
+};
+
+const resolveTmdbEpisodeByYearBucket = async (
+  tmdbShowId: string,
+  requestedBucketSeason: string,
+  requestedBucketEpisode: string,
+  tmdbKey: string,
+  phases: PhaseDurations
+) => {
+  const bucketSeason = parseInt(requestedBucketSeason, 10);
+  const bucketEpisode = parseInt(requestedBucketEpisode, 10);
+  if (!Number.isFinite(bucketSeason) || !Number.isFinite(bucketEpisode) || bucketSeason < 1 || bucketEpisode < 1) {
+    return null;
+  }
+
+  const showResponse = await fetchJsonCached(
+    `tmdb:tv:${tmdbShowId}`,
+    `https://api.themoviedb.org/3/tv/${tmdbShowId}?api_key=${tmdbKey}`,
+    TMDB_CACHE_TTL_MS,
+    phases,
+    'tmdb'
+  );
+  if (!showResponse.ok) return null;
+
+  const numberOfSeasons = Number(showResponse.data?.number_of_seasons);
+  if (!Number.isFinite(numberOfSeasons) || numberOfSeasons < 1) return null;
+
+  const yearBuckets = new Map<number, Array<{ tmdbSeason: number; tmdbEpisode: number }>>();
+  for (let seasonIndex = 1; seasonIndex <= numberOfSeasons; seasonIndex += 1) {
+    const seasonResponse = await fetchJsonCached(
+      `tmdb:tv:${tmdbShowId}:season:${seasonIndex}`,
+      `https://api.themoviedb.org/3/tv/${tmdbShowId}/season/${seasonIndex}?api_key=${tmdbKey}`,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'tmdb'
+    );
+    if (!seasonResponse.ok || !Array.isArray(seasonResponse.data?.episodes)) continue;
+
+    for (const episodeData of seasonResponse.data.episodes) {
+      const airDate = typeof episodeData?.air_date === 'string' ? episodeData.air_date : '';
+      const year = parseInt(airDate.slice(0, 4), 10);
+      const tmdbEpisode = Number(episodeData?.episode_number);
+      if (!Number.isFinite(year) || !Number.isFinite(tmdbEpisode)) continue;
+      const bucket = yearBuckets.get(year) || [];
+      bucket.push({ tmdbSeason: seasonIndex, tmdbEpisode });
+      yearBuckets.set(year, bucket);
+    }
+  }
+
+  const orderedYears = [...yearBuckets.keys()].sort((a, b) => a - b);
+  const targetYear = orderedYears[bucketSeason - 1];
+  if (!Number.isFinite(targetYear)) return null;
+  const bucketEpisodes = yearBuckets.get(targetYear) || [];
+  const targetEpisode = bucketEpisodes[bucketEpisode - 1];
+  if (!targetEpisode) return null;
+
+  return {
+    showId: tmdbShowId,
+    season: String(targetEpisode.tmdbSeason),
+    episode: String(targetEpisode.tmdbEpisode),
   };
 };
 
@@ -3996,6 +4057,7 @@ export async function GET(
   let episode: string | null = null;
   let isTmdb = false;
   let isTvdb = false;
+  let isRealImdb = false;
   let tvdbSeriesId: string | null = null;
   let isKitsu = false;
   let explicitTmdbMediaType: 'movie' | 'tv' | null = null;
@@ -4023,6 +4085,11 @@ export async function GET(
     isTvdb = true;
     mediaId = parts[1];
     tvdbSeriesId = parts[1] || null;
+    season = parts.length > 2 ? parts[2] : null;
+    episode = parts.length > 3 ? parts[3] : null;
+  } else if (idPrefix === 'realimdb') {
+    isRealImdb = true;
+    mediaId = parts[1];
     season = parts.length > 2 ? parts[2] : null;
     episode = parts.length > 3 ? parts[3] : null;
   } else if (idPrefix === 'kitsu') {
@@ -4197,6 +4264,64 @@ export async function GET(
         if (tvResult) {
           media = tvResult;
           mediaType = 'tv';
+        }
+      } else if (isRealImdb) {
+        if (!mediaId) {
+          throw new HttpError('IMDb ID is required', 400);
+        }
+
+        const imdbEpisode =
+          season && episode
+            ? findImdbEpisodeBySeriesSeasonEpisode(mediaId, Number(season), Number(episode))
+            : getImdbEpisodeFromDataset(mediaId);
+        const imdbLookupId = imdbEpisode?.imdbId || mediaId;
+
+        const findResponse = await fetchJsonCached(
+          `tmdb:find:realimdb:${imdbLookupId}`,
+          `https://api.themoviedb.org/3/find/${imdbLookupId}?api_key=${tmdbKey}&external_source=imdb_id`,
+          TMDB_CACHE_TTL_MS,
+          phases,
+          'tmdb'
+        );
+        const findData = findResponse.data || {};
+        const episodeResult = findData.tv_episode_results?.[0] || null;
+        if (episodeResult?.show_id) {
+          mediaId = String(episodeResult.show_id);
+          season = Number.isFinite(Number(episodeResult.season_number)) ? String(episodeResult.season_number) : season;
+          episode = Number.isFinite(Number(episodeResult.episode_number)) ? String(episodeResult.episode_number) : episode;
+          mappedImdbId = imdbEpisode?.seriesImdbId || mediaId;
+
+          const showResponse = await fetchJsonCached(
+            `tmdb:tv:${mediaId}`,
+            `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${tmdbKey}`,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          );
+          if (showResponse.ok) {
+            media = showResponse.data;
+            mediaType = 'tv';
+          }
+        } else {
+          const tvResult = findData.tv_results?.[0] || null;
+          if (tvResult) {
+            media = tvResult;
+            mediaType = 'tv';
+            if (season && episode) {
+              const yearBucketMapping = await resolveTmdbEpisodeByYearBucket(
+                String(tvResult.id),
+                season,
+                episode,
+                tmdbKey,
+                phases
+              );
+              if (yearBucketMapping) {
+                mediaId = yearBucketMapping.showId;
+                season = yearBucketMapping.season;
+                episode = yearBucketMapping.episode;
+              }
+            }
+          }
         }
       } else if (isKitsu) {
         let mappingUrl = `https://animemapping.stremio.dpdns.org/kitsu/${mediaId}`;

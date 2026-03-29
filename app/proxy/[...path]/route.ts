@@ -241,6 +241,34 @@ const resolveTmdbFromErdbId = async (
     }
   }
 
+  if (erdbId.startsWith('realimdb:')) {
+    const parts = erdbId.split(':');
+    const imdbId = parts[1];
+    if (!imdbId) return null;
+
+    const findUrl = new URL(`${TMDB_BASE_URL}/find/${encodeURIComponent(imdbId)}`);
+    findUrl.searchParams.set('api_key', tmdbKey);
+    findUrl.searchParams.set('external_source', 'imdb_id');
+    if (lang) {
+      findUrl.searchParams.set('language', lang);
+    }
+
+    const data = await fetchTmdbJson(findUrl.toString());
+    const episodeResult = Array.isArray(data?.tv_episode_results) ? data.tv_episode_results[0] : null;
+    if (episodeResult?.show_id) {
+      return {
+        id: Number(episodeResult.show_id),
+        type: 'tv',
+        season: Number.isFinite(Number(episodeResult.season_number)) ? Number(episodeResult.season_number) : null,
+      };
+    }
+
+    const tvResult = Array.isArray(data?.tv_results) ? data.tv_results[0] : null;
+    if (tvResult?.id) {
+      return { id: Number(tvResult.id), type: 'tv' };
+    }
+  }
+
   // Handle anime site IDs
   const animePrefixes = ['kitsu', 'anilist', 'mal', 'myanimelist', 'anidb'];
   for (const prefix of animePrefixes) {
@@ -321,6 +349,7 @@ const translateMetaPayload = async (
   meta: Record<string, unknown>,
   requestUrl: URL,
   config: ProxyConfig,
+  requestedType?: string | null,
 ) => {
   if (!config.translateMeta) return meta;
   const lang = config.lang || requestUrl.searchParams.get('lang');
@@ -328,7 +357,7 @@ const translateMetaPayload = async (
 
   const rawId = typeof meta.id === 'string' ? meta.id : null;
   const rawType = typeof meta.type === 'string' ? meta.type : null;
-  const erdbId = normalizeErdbId(rawId, rawType);
+  const erdbId = normalizeProxyErdbId(rawId, rawType, config, meta, requestedType);
   if (!erdbId) return meta;
 
   const tmdbRef = await resolveTmdbFromErdbId(erdbId, rawType, config.tmdbKey, lang);
@@ -419,6 +448,71 @@ const getPublicRequestUrl = (request: NextRequest) => {
 const buildError = (message: string, status = 400) =>
   NextResponse.json({ error: message }, { status, headers: corsHeaders });
 
+const isCinemetaManifestUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return /(^|[-.])cinemeta\.strem\.io$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const isAiometadataManifestUrl = (value: string) => value.toLowerCase().includes('aiometadata');
+
+const isAnimeMeta = (meta: Record<string, unknown>, rawType: string | null, rawId: string | null) => {
+  const normalizedType = String(rawType || '').trim().toLowerCase();
+  if (normalizedType.startsWith('anime')) return true;
+
+  const normalizedId = String(rawId || '').trim().toLowerCase();
+  if (
+    normalizedId.startsWith('kitsu:') ||
+    normalizedId.startsWith('mal:') ||
+    normalizedId.startsWith('anilist:') ||
+    normalizedId.startsWith('anidb:')
+  ) {
+    return true;
+  }
+
+  const genres = Array.isArray(meta.genres) ? meta.genres : [];
+  return genres.some((genre) => typeof genre === 'string' && genre.trim().toLowerCase() === 'anime');
+};
+
+const applyConfiguredEpisodeProvider = (
+  normalized: string,
+  provider: string | undefined
+) => {
+  if (!provider) return normalized;
+  if (provider === 'tmdb') return normalized;
+  if (provider === 'tvdb' && /^tvdb:/i.test(normalized)) return normalized;
+  if (provider === 'realimdb' && /^tt\d+$/i.test(normalized)) return `realimdb:${normalized}`;
+  return normalized;
+};
+
+const normalizeProxyErdbId = (
+  rawId: string | null,
+  rawType: string | null,
+  config: ProxyConfig,
+  meta?: Record<string, unknown>,
+  requestedType?: string | null
+) => {
+  const normalized = normalizeErdbId(rawId, rawType);
+  if (!normalized) return null;
+  const normalizedType = normalizeStremioType(rawType);
+  if (isAiometadataManifestUrl(config.url)) {
+    if (normalizedType === 'movie') {
+      return normalized;
+    }
+    const provider = config.aiometadataProvider;
+    return applyConfiguredEpisodeProvider(normalized, provider);
+  }
+  if (!isCinemetaManifestUrl(config.url)) return normalized;
+
+  if (normalizedType === 'tv' && /^tt\d+$/i.test(normalized)) {
+    return `realimdb:${normalized}`;
+  }
+  return normalized;
+};
+
 const isTypeEnabled = (config: ProxyConfig, type: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
   if (type === 'poster') return config.posterEnabled !== false;
   if (type === 'backdrop') return config.backdropEnabled !== false;
@@ -430,13 +524,14 @@ const rewriteMetaVideoThumbnails = (
   meta: Record<string, unknown>,
   requestUrl: URL,
   config: ProxyConfig,
+  requestedType?: string | null,
 ) => {
   if (!isTypeEnabled(config, 'thumbnail')) return meta;
   if (!Array.isArray(meta.videos) || meta.videos.length === 0) return meta;
 
   const rawId = typeof meta.id === 'string' ? meta.id : null;
   const rawType = typeof meta.type === 'string' ? meta.type : null;
-  const erdbId = normalizeErdbId(rawId, rawType);
+  const erdbId = normalizeProxyErdbId(rawId, rawType, config, meta, requestedType);
   if (!erdbId) return meta;
 
   const nextVideos = meta.videos.map((video) => {
@@ -483,11 +578,12 @@ const rewriteMetaImages = (
   meta: Record<string, unknown>,
   requestUrl: URL,
   config: ProxyConfig,
+  requestedType?: string | null,
 ) => {
   if (!meta || typeof meta !== 'object') return meta;
   const rawId = typeof meta.id === 'string' ? meta.id : null;
   const rawType = typeof meta.type === 'string' ? meta.type : null;
-  const erdbId = normalizeErdbId(rawId, rawType);
+  const erdbId = normalizeProxyErdbId(rawId, rawType, config, meta, requestedType);
   if (!erdbId) return meta;
 
   const nextMeta: Record<string, unknown> = { ...meta };
@@ -528,7 +624,7 @@ const rewriteMetaImages = (
     });
   }
 
-  return rewriteMetaVideoThumbnails(nextMeta, requestUrl, config);
+  return rewriteMetaVideoThumbnails(nextMeta, requestUrl, config, requestedType);
 };
 
 export async function GET(
@@ -612,6 +708,10 @@ export async function GET(
   }
 
   const resource = resourceSegments[0] || '';
+  const requestedType =
+    resource === 'catalog' || resource === 'meta'
+      ? (resourceSegments[1] || null)
+      : null;
   const forwardUrl = new URL(originBase);
   // Preserve Stremio "extra" path segments like `search=...` and `skip=...`.
   // Encoding each segment would turn `=` into `%3D`, breaking upstream parsing.
@@ -675,18 +775,23 @@ export async function GET(
 
   if (resource === 'catalog' && Array.isArray(payload.metas)) {
     const metasWithImages = payload.metas.map((meta) =>
-      rewriteMetaImages(meta as Record<string, unknown>, publicRequestUrl, config),
+      rewriteMetaImages(meta as Record<string, unknown>, publicRequestUrl, config, requestedType),
     );
     payload.metas = await mapWithConcurrency(
       metasWithImages as Array<Record<string, unknown>>,
       6,
-      async (meta) => translateMetaPayload(meta, publicRequestUrl, config),
+      async (meta) => translateMetaPayload(meta, publicRequestUrl, config, requestedType),
     );
   }
 
   if (resource === 'meta' && payload.meta && typeof payload.meta === 'object') {
-    const metaWithImages = rewriteMetaImages(payload.meta as Record<string, unknown>, publicRequestUrl, config);
-    payload.meta = await translateMetaPayload(metaWithImages, publicRequestUrl, config);
+    const metaWithImages = rewriteMetaImages(
+      payload.meta as Record<string, unknown>,
+      publicRequestUrl,
+      config,
+      requestedType
+    );
+    payload.meta = await translateMetaPayload(metaWithImages, publicRequestUrl, config, requestedType);
   }
 
   return NextResponse.json(payload, { status: 200, headers: corsHeaders });

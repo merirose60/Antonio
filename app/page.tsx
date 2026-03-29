@@ -75,6 +75,8 @@ type ProxyType = (typeof PROXY_TYPES)[number];
 type PreviewType = (typeof PREVIEW_TYPES)[number];
 type ProxyEnabledTypes = Record<ProxyType, boolean>;
 type AiometadataPatternType = 'poster' | 'background' | 'logo' | 'episodeThumbnail';
+type AiometadataEpisodeProvider = 'tvdb' | 'realimdb';
+type ProxyEpisodeProvider = 'tmdb' | 'tvdb' | 'realimdb';
 type StreamBadgesSetting = 'auto' | 'on' | 'off';
 type QualityBadgesSide = 'left' | 'right';
 type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -125,6 +127,10 @@ const isBackdropRatingLayout = (value: unknown): value is BackdropRatingLayout =
   BACKDROP_RATING_LAYOUT_OPTIONS.some((option) => option.id === value);
 const isThumbnailRatingLayout = (value: unknown): value is ThumbnailRatingLayout =>
   THUMBNAIL_RATING_LAYOUT_OPTIONS.some((option) => option.id === value);
+const isProxyEpisodeProvider = (value: unknown): value is ProxyEpisodeProvider =>
+  value === 'tmdb' || value === 'tvdb' || value === 'realimdb';
+const isAiometadataEpisodeProvider = (value: unknown): value is AiometadataEpisodeProvider =>
+  value === 'tvdb' || value === 'realimdb';
 
 const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, '');
 
@@ -434,8 +440,8 @@ const buildAiometadataPatternBlock = (options: {
   return query ? `${basePattern}?${query}` : basePattern;
 };
 
-const buildEpisodeThumbnailIdPattern = (usesTvdb: boolean) =>
-  usesTvdb ? 'tvdb:{tvdb_id}:{season}:{episode}' : 'tmdb:tv:{tmdb_id}:{season}:{episode}';
+const buildEpisodeThumbnailIdPattern = (provider: AiometadataEpisodeProvider) =>
+  provider === 'tvdb' ? 'tvdb:{tvdb_id}:{season}:{episode}' : 'realimdb:{imdb_id}:{season}:{episode}';
 
 const downloadJsonFile = (payload: Record<string, unknown>, filename: string) => {
   if (typeof window === 'undefined') return;
@@ -493,6 +499,7 @@ export default function Home() {
   const [tmdbKey, setTmdbKey] = useState('');
   const [simklClientId, setSimklClientId] = useState('');
   const [proxyManifestUrl, setProxyManifestUrl] = useState('');
+  const [proxyAiometadataProvider, setProxyAiometadataProvider] = useState<ProxyEpisodeProvider>('tmdb');
   const [proxyEnabledTypes, setProxyEnabledTypes] = useState<ProxyEnabledTypes>({
     poster: true,
     backdrop: true,
@@ -505,7 +512,7 @@ export default function Home() {
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [aiometadataCopiedType, setAiometadataCopiedType] = useState<AiometadataPatternType | null>(null);
-  const [aiometadataUsesTvdb, setAiometadataUsesTvdb] = useState(false);
+  const [aiometadataEpisodeProvider, setAiometadataEpisodeProvider] = useState<AiometadataEpisodeProvider>('realimdb');
   const [exportStatus, setExportStatus] = useState<'idle' | 'with' | 'without'>('idle');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importMessage, setImportMessage] = useState('');
@@ -1055,6 +1062,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     if (thumbnailSize) {
       config.thumbnailSize = thumbnailSize;
     }
+    if (manifestUrl.toLowerCase().includes('aiometadata')) {
+      config.aiometadataProvider = proxyAiometadataProvider;
+    }
 
     config.erdbBase = baseUrl;
     const encoded = encodeBase64Url(JSON.stringify(config));
@@ -1087,6 +1097,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     backdropRatingsLayout,
     thumbnailRatingsLayout,
     thumbnailSize,
+    proxyAiometadataProvider,
     proxyEnabledTypes,
     proxyTranslateMeta,
     baseUrl,
@@ -1097,7 +1108,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       baseUrl,
       imageType: 'thumbnail',
       configString,
-      idPattern: buildEpisodeThumbnailIdPattern(aiometadataUsesTvdb),
+      idPattern: buildEpisodeThumbnailIdPattern(aiometadataEpisodeProvider),
     });
 
     return {
@@ -1121,7 +1132,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   }, [
     baseUrl,
     configString,
-    aiometadataUsesTvdb,
+    aiometadataEpisodeProvider,
   ]);
 
   const updateRatingRowsForType = (
@@ -1251,7 +1262,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       posterRatingsMaxPerSide,
       backdropRatingsLayout,
       thumbnailRatingsLayout,
-      aiometadataUsesTvdb,
+      aiometadataEpisodeProvider,
+      proxyAiometadataProvider,
       proxyManifestUrl,
       proxyEnabledTypes,
       translateMeta: proxyTranslateMeta,
@@ -1336,8 +1348,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     if (typeof payload.thumbnailSize === 'string' && THUMBNAIL_SIZE_OPTIONS.some((option) => option.id === payload.thumbnailSize)) {
       setThumbnailSize(payload.thumbnailSize as ThumbnailSize);
     }
-    if (typeof payload.aiometadataUsesTvdb === 'boolean') {
-      setAiometadataUsesTvdb(payload.aiometadataUsesTvdb);
+    if (isAiometadataEpisodeProvider(payload.aiometadataEpisodeProvider)) {
+      setAiometadataEpisodeProvider(payload.aiometadataEpisodeProvider);
     }
 
     if (payload.posterRatingsMaxPerSide === null) {
@@ -1400,6 +1412,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     if (typeof payload.proxyManifestUrl === 'string') {
       setProxyManifestUrl(normalizeManifestUrl(payload.proxyManifestUrl, true));
     }
+    if (isProxyEpisodeProvider(payload.proxyAiometadataProvider)) {
+      setProxyAiometadataProvider(payload.proxyAiometadataProvider);
+    }
     if (payload.proxyEnabledTypes && typeof payload.proxyEnabledTypes === 'object') {
       const enabled = payload.proxyEnabledTypes as Record<string, unknown>;
       setProxyEnabledTypes((current) => ({
@@ -1443,7 +1458,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       backdropRatingsLayout,
       thumbnailRatingsLayout,
       thumbnailSize,
-      aiometadataUsesTvdb,
+      aiometadataEpisodeProvider,
+      proxyAiometadataProvider,
       proxyManifestUrl,
       proxyEnabledTypes,
       translateMeta: proxyTranslateMeta,
@@ -1473,7 +1489,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     backdropRatingsLayout,
     thumbnailRatingsLayout,
     thumbnailSize,
-    aiometadataUsesTvdb,
+    aiometadataEpisodeProvider,
+    proxyAiometadataProvider,
     proxyManifestUrl,
     proxyEnabledTypes,
     proxyTranslateMeta,
@@ -1624,7 +1641,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       proxyCopied,
       copied,
       aiometadataCopiedType,
-      aiometadataUsesTvdb,
+      aiometadataEpisodeProvider,
+      proxyAiometadataProvider,
     },
     derived: {
       baseUrl,
@@ -1669,7 +1687,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       setBackdropRatingsLayout,
       setThumbnailRatingsLayout,
       setThumbnailSize,
-      setAiometadataUsesTvdb,
+      setAiometadataEpisodeProvider,
+      setProxyAiometadataProvider,
       setPosterQualityBadgesPosition,
       setQualityBadgesSide,
       setRatingStyleForType,
