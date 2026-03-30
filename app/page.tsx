@@ -240,6 +240,7 @@ const buildAiometadataPattern = (options: {
   thumbnailRatingsLayout: ThumbnailRatingLayout;
   posterVerticalBadgeContent: VerticalBadgeContent;
   backdropVerticalBadgeContent: VerticalBadgeContent;
+  thumbnailVerticalBadgeContent: VerticalBadgeContent;
   thumbnailSize: ThumbnailSize;
 }) => {
   const {
@@ -273,6 +274,7 @@ const buildAiometadataPattern = (options: {
     thumbnailRatingsLayout,
     posterVerticalBadgeContent,
     backdropVerticalBadgeContent,
+    thumbnailVerticalBadgeContent,
     thumbnailSize,
   } = options;
 
@@ -332,8 +334,8 @@ const buildAiometadataPattern = (options: {
     params.push(['ratingStyle', backdropRatingStyle]);
     params.push(['thumbnailRatingsLayout', thumbnailRatingsLayout]);
     params.push(['thumbnailSize', thumbnailSize]);
-    if (thumbnailRatingsLayout.endsWith('-vertical') && backdropVerticalBadgeContent !== 'standard') {
-      params.push(['backdropVerticalBadgeContent', backdropVerticalBadgeContent]);
+    if (thumbnailRatingsLayout.endsWith('-vertical') && thumbnailVerticalBadgeContent !== 'standard') {
+      params.push(['thumbnailVerticalBadgeContent', thumbnailVerticalBadgeContent]);
     }
   } else {
     params.push(['logoRatings', logoRatings]);
@@ -428,7 +430,7 @@ const buildAiometadataPatternBlock = (options: {
       params.push(['imageText', config.backdropImageText]);
     }
     pushIfString(options.imageType === 'thumbnail' ? 'thumbnailRatingsLayout' : 'backdropRatingsLayout');
-    pushIfString('backdropVerticalBadgeContent');
+    pushIfString(options.imageType === 'thumbnail' ? 'thumbnailVerticalBadgeContent' : 'backdropVerticalBadgeContent');
     if (options.imageType === 'thumbnail') {
       const thumbnailRatings = filterThumbnailRatings(config.thumbnailRatings ?? config.ratings);
       if (thumbnailRatings) {
@@ -510,6 +512,7 @@ export default function Home() {
   const [thumbnailRatingsLayout, setThumbnailRatingsLayout] = useState<ThumbnailRatingLayout>(DEFAULT_THUMBNAIL_RATING_LAYOUT);
   const [posterVerticalBadgeContent, setPosterVerticalBadgeContent] = useState<VerticalBadgeContent>('standard');
   const [backdropVerticalBadgeContent, setBackdropVerticalBadgeContent] = useState<VerticalBadgeContent>('standard');
+  const [thumbnailVerticalBadgeContent, setThumbnailVerticalBadgeContent] = useState<VerticalBadgeContent>('standard');
   const [thumbnailSize, setThumbnailSize] = useState<ThumbnailSize>(DEFAULT_THUMBNAIL_SIZE);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
@@ -737,7 +740,8 @@ posterRatingsMaxPerSide | Number (1-20)                                         
 backdropRatingsLayout   | center, right-vertical                                               | center
 thumbnailRatingsLayout  | center, center-top, center-bottom, center-vertical, center-top-vertical, center-bottom-vertical, left, left-top, left-bottom, left-vertical, left-top-vertical, left-bottom-vertical, right, right-top, right-bottom, right-vertical, right-top-vertical, right-bottom-vertical | center
 posterVerticalBadgeContent   | standard, stacked (poster vertical layouts only)                 | standard
-backdropVerticalBadgeContent | standard, stacked (backdrop + thumbnail vertical layouts only)   | standard
+backdropVerticalBadgeContent | standard, stacked (backdrop vertical layouts only)               | standard
+thumbnailVerticalBadgeContent| standard, stacked (thumbnail vertical layouts only)              | standard
 thumbnailSize           | small, medium, large                                                 | medium
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
@@ -756,12 +760,12 @@ thumbnail -> ratingStyle = cfg.backdropRatingStyle, thumbnailRatingsLayout = cfg
 logo     -> ratingStyle = cfg.logoRatingStyle (omit imageText)
 Ratings providers can be set per-type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings). Thumbnail ratings are episode-level and currently support TMDB + IMDb only.
 Quality badges style can be set per-type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle (fallback to cfg.qualityBadgesStyle).
-Use cfg.posterVerticalBadgeContent for poster vertical layouts and cfg.backdropVerticalBadgeContent for backdrop or thumbnail vertical layouts when you want icon and value stacked instead of inline.
+Use cfg.posterVerticalBadgeContent for poster vertical layouts, cfg.backdropVerticalBadgeContent for backdrop, and cfg.thumbnailVerticalBadgeContent for thumbnail vertical layouts when you want icon and value stacked instead of inline.
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : cfg.posterImageText;
-\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&simklClientId=\${cfg.simklClientId}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&thumbnailRatings=\${cfg.thumbnailRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&posterVerticalBadgeContent=\${cfg.posterVerticalBadgeContent}&backdropVerticalBadgeContent=\${cfg.backdropVerticalBadgeContent}
+\${cfg.baseUrl}/\${type}/\${id}.jpg?tmdbKey=\${cfg.tmdbKey}&mdblistKey=\${cfg.mdblistKey}&simklClientId=\${cfg.simklClientId}&ratings=\${cfg.ratings}&posterRatings=\${cfg.posterRatings}&backdropRatings=\${cfg.backdropRatings}&thumbnailRatings=\${cfg.thumbnailRatings}&logoRatings=\${cfg.logoRatings}&lang=\${cfg.lang}&streamBadges=\${cfg.streamBadges}&posterStreamBadges=\${cfg.posterStreamBadges}&backdropStreamBadges=\${cfg.backdropStreamBadges}&qualityBadgesSide=\${cfg.qualityBadgesSide}&posterQualityBadgesPosition=\${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=\${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=\${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=\${cfg.backdropQualityBadgesStyle}&ratingStyle=\${typeRatingStyle}&imageText=\${typeImageText}&posterRatingsLayout=\${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=\${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=\${cfg.backdropRatingsLayout}&posterVerticalBadgeContent=\${cfg.posterVerticalBadgeContent}&backdropVerticalBadgeContent=\${cfg.backdropVerticalBadgeContent}&thumbnailVerticalBadgeContent=\${cfg.thumbnailVerticalBadgeContent}
 
 For thumbnails use thumbnailRatingsLayout and thumbnailSize instead of imageText.
 Omit imageText when type=logo or type=thumbnail.
@@ -860,11 +864,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         previewType === 'thumbnail' ? thumbnailRatingsLayout : backdropRatingsLayout
       );
       if (
-        ((previewType === 'thumbnail' && thumbnailRatingsLayout.endsWith('-vertical')) ||
-          (previewType === 'backdrop' && backdropRatingsLayout === 'right-vertical')) &&
+        previewType === 'backdrop' &&
+        backdropRatingsLayout === 'right-vertical' &&
         backdropVerticalBadgeContent !== 'standard'
       ) {
         query.set('backdropVerticalBadgeContent', backdropVerticalBadgeContent);
+      }
+      if (
+        previewType === 'thumbnail' &&
+        thumbnailRatingsLayout.endsWith('-vertical') &&
+        thumbnailVerticalBadgeContent !== 'standard'
+      ) {
+        query.set('thumbnailVerticalBadgeContent', thumbnailVerticalBadgeContent);
       }
       if (previewType === 'thumbnail') {
         query.set('thumbnailSize', thumbnailSize);
@@ -896,6 +907,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     thumbnailRatingsLayout,
     posterVerticalBadgeContent,
     backdropVerticalBadgeContent,
+    thumbnailVerticalBadgeContent,
     thumbnailSize,
     qualityBadgesSide,
     posterQualityBadgesPosition,
@@ -1003,6 +1015,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     ) {
       config.backdropVerticalBadgeContent = backdropVerticalBadgeContent;
     }
+    if (
+      thumbnailRatingsLayout.endsWith('-vertical') &&
+      thumbnailVerticalBadgeContent !== 'standard'
+    ) {
+      config.thumbnailVerticalBadgeContent = thumbnailVerticalBadgeContent;
+    }
 
     return encodeBase64Url(JSON.stringify(config));
   }, [
@@ -1034,6 +1052,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     thumbnailRatingsLayout,
     posterVerticalBadgeContent,
     backdropVerticalBadgeContent,
+    thumbnailVerticalBadgeContent,
     thumbnailSize,
   ]);
 
@@ -1133,6 +1152,12 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     ) {
       config.backdropVerticalBadgeContent = backdropVerticalBadgeContent;
     }
+    if (
+      thumbnailRatingsLayout.endsWith('-vertical') &&
+      thumbnailVerticalBadgeContent !== 'standard'
+    ) {
+      config.thumbnailVerticalBadgeContent = thumbnailVerticalBadgeContent;
+    }
     if (manifestUrl.toLowerCase().includes('aiometadata')) {
       config.aiometadataProvider = proxyAiometadataProvider;
     }
@@ -1169,6 +1194,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     thumbnailRatingsLayout,
     posterVerticalBadgeContent,
     backdropVerticalBadgeContent,
+    thumbnailVerticalBadgeContent,
     thumbnailSize,
     proxyAiometadataProvider,
     proxyEnabledTypes,
@@ -1337,6 +1363,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       thumbnailRatingsLayout,
       posterVerticalBadgeContent,
       backdropVerticalBadgeContent,
+      thumbnailVerticalBadgeContent,
       thumbnailSize,
       aiometadataEpisodeProvider,
       proxyAiometadataProvider,
@@ -1428,6 +1455,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     }
     if (isVerticalBadgeContent(payload.backdropVerticalBadgeContent)) {
       setBackdropVerticalBadgeContent(payload.backdropVerticalBadgeContent);
+    }
+    if (isVerticalBadgeContent(payload.thumbnailVerticalBadgeContent)) {
+      setThumbnailVerticalBadgeContent(payload.thumbnailVerticalBadgeContent);
     } else if (isVerticalBadgeContent(payload.verticalBadgeContent)) {
       setBackdropVerticalBadgeContent(payload.verticalBadgeContent);
     }
@@ -1743,6 +1773,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       thumbnailRatingsLayout,
       posterVerticalBadgeContent,
       backdropVerticalBadgeContent,
+      thumbnailVerticalBadgeContent,
       thumbnailSize,
       qualityBadgesSide,
       posterQualityBadgesPosition,
@@ -1800,6 +1831,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       setThumbnailRatingsLayout,
       setPosterVerticalBadgeContent,
       setBackdropVerticalBadgeContent,
+      setThumbnailVerticalBadgeContent,
       setThumbnailSize,
       setAiometadataEpisodeProvider,
       setProxyAiometadataProvider,

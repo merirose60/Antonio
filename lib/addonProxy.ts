@@ -13,6 +13,7 @@ const ERDB_OPTIONAL_PARAMS = [
   'thumbnailRatingsLayout',
   'posterVerticalBadgeContent',
   'backdropVerticalBadgeContent',
+  'thumbnailVerticalBadgeContent',
   'thumbnailSize',
   'aiometadataProvider',
 ];
@@ -103,6 +104,7 @@ export type ProxyConfig = {
   thumbnailRatingsLayout?: string;
   posterVerticalBadgeContent?: string;
   backdropVerticalBadgeContent?: string;
+  thumbnailVerticalBadgeContent?: string;
   thumbnailSize?: string;
   aiometadataProvider?: string;
   erdbBase?: string;
@@ -141,6 +143,7 @@ const PROXY_OPTIONAL_STRING_KEYS = [
   'thumbnailRatingsLayout',
   'posterVerticalBadgeContent',
   'backdropVerticalBadgeContent',
+  'thumbnailVerticalBadgeContent',
   'thumbnailSize',
   'aiometadataProvider',
   'erdbBase',
