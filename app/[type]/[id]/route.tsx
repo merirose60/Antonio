@@ -36,6 +36,11 @@ import {
   normalizeRatingStyle,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import {
+  buildIncludeImageLanguage,
+  getTmdbLanguageBase,
+  normalizeTmdbLanguageCode,
+} from '@/lib/tmdbLanguage';
 import { findImdbEpisodeBySeriesSeasonEpisode, getImdbEpisodeFromDataset, getImdbRatingFromDataset } from '@/lib/imdbDataset';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetSync';
 // Removed mdblistRequestLogs import
@@ -1727,37 +1732,58 @@ const resolveTmdbEpisodeByYearBucket = async (
   };
 };
 
-const normalizeImageLanguage = (value?: string | null) => {
-  if (!value) return null;
-  const normalized = value.toLowerCase();
-  if (normalized === 'us' || normalized === 'en-us') return 'en';
-  if (normalized.includes('-')) return normalized.split('-')[0];
-  return normalized;
-};
+const getImageLanguageTag = (item: any) => {
+  if (!item?.iso_639_1) return null;
+  if (typeof item?.iso_3166_1 === 'string' && item.iso_3166_1.trim()) {
+    return `${item.iso_639_1}-${item.iso_3166_1}`;
+  }
 
-const buildIncludeImageLanguage = (preferredLang: string, fallbackLang: string) => {
-  const languages = [normalizeImageLanguage(preferredLang), normalizeImageLanguage(fallbackLang), 'null']
-    .filter(Boolean) as string[];
-  return [...new Set(languages)].join(',');
+  return item.iso_639_1;
 };
 
 const pickByLanguageWithFallback = (
   items: any[] = [],
   preferredLang: string,
-  fallbackLang: string
+  fallbackLang: string,
+  preferredPath?: string | null
 ) => {
   if (!Array.isArray(items) || items.length === 0) return null;
 
-  const preferred = normalizeImageLanguage(preferredLang);
-  const fallback = normalizeImageLanguage(fallbackLang);
+  if (preferredPath) {
+    const preferredPathItem = items.find((item: any) => item?.file_path === preferredPath);
+    if (preferredPathItem) {
+      return preferredPathItem;
+    }
+  }
+
+  const findItemByLanguage = (language: string | null) => {
+    if (!language) {
+      return null;
+    }
+
+    const exactMatch = items.find((item: any) => normalizeTmdbLanguageCode(getImageLanguageTag(item)) === language);
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const baseLanguage = getTmdbLanguageBase(language);
+    if (!baseLanguage) {
+      return null;
+    }
+
+    return items.find((item: any) => getTmdbLanguageBase(getImageLanguageTag(item)) === baseLanguage) || null;
+  };
+
+  const preferred = normalizeTmdbLanguageCode(preferredLang);
+  const fallback = normalizeTmdbLanguageCode(fallbackLang);
 
   if (preferred) {
-    const preferredItem = items.find((item: any) => normalizeImageLanguage(item?.iso_639_1) === preferred);
+    const preferredItem = findItemByLanguage(preferred);
     if (preferredItem) return preferredItem;
   }
 
   if (fallback) {
-    const fallbackItem = items.find((item: any) => normalizeImageLanguage(item?.iso_639_1) === fallback);
+    const fallbackItem = findItemByLanguage(fallback);
     if (fallbackItem) return fallbackItem;
   }
 
@@ -1769,7 +1795,7 @@ const isTextlessPosterSelection = (posters: any[] = [], selectedPoster?: any | n
 
   return posters.some(
     (poster: any) =>
-      poster?.file_path === selectedPoster.file_path && normalizeImageLanguage(poster?.iso_639_1) === null
+      poster?.file_path === selectedPoster.file_path && normalizeTmdbLanguageCode(getImageLanguageTag(poster)) === null
   );
 };
 
@@ -1783,8 +1809,8 @@ const pickPosterByPreference = (
   if (!Array.isArray(posters) || posters.length === 0) return null;
 
   const canonicalOriginalPath =
+    pickByLanguageWithFallback(posters, preferredLang, fallbackLang, originalPosterPath)?.file_path ||
     originalPosterPath ||
-    pickByLanguageWithFallback(posters, preferredLang, fallbackLang)?.file_path ||
     posters[0]?.file_path ||
     null;
   const originalPoster = canonicalOriginalPath
@@ -1798,7 +1824,7 @@ const pickPosterByPreference = (
   if (preference === 'clean') {
     return (
       posters.find((poster: any) => !poster.iso_639_1) ||
-      pickByLanguageWithFallback(posters, preferredLang, fallbackLang) ||
+      pickByLanguageWithFallback(posters, preferredLang, fallbackLang, originalPosterPath) ||
       fallbackOriginal
     );
   }
@@ -1824,8 +1850,8 @@ const pickBackdropByPreference = (
   if (!Array.isArray(backdrops) || backdrops.length === 0) return null;
 
   const canonicalOriginalPath =
+    pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang, originalBackdropPath)?.file_path ||
     originalBackdropPath ||
-    pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang)?.file_path ||
     backdrops[0]?.file_path ||
     null;
   const originalBackdrop = canonicalOriginalPath
@@ -1840,7 +1866,7 @@ const pickBackdropByPreference = (
   if (preference === 'clean') {
     return (
       backdrops.find((backdrop: any) => !backdrop.iso_639_1) ||
-      pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
+      pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang, originalBackdropPath) ||
       fallbackOriginal
     );
   }
@@ -4704,7 +4730,7 @@ export async function GET(
     episode = parts.length > 2 ? parts[2] : null;
   }
 
-  const requestedImageLang = normalizeImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
+  const requestedImageLang = normalizeTmdbLanguageCode(lang) || FALLBACK_IMAGE_LANGUAGE;
   const includeImageLanguage = buildIncludeImageLanguage(requestedImageLang, FALLBACK_IMAGE_LANGUAGE);
   const posterTextPreference: PosterTextPreference =
     imageText === 'clean' || imageText === 'alternative' || imageText === 'original'
@@ -6028,6 +6054,8 @@ export async function GET(
           let posterCollection = input.posters || [];
           const backdropCollection = input.backdrops || [];
           const logoCollection = input.logos || [];
+          const preferredPosterPath = details?.poster_path || media?.poster_path || null;
+          const preferredBackdropPath = details?.backdrop_path || media?.backdrop_path || null;
           const selectedLogo = pickByLanguageWithFallback(
             logoCollection,
             requestedImageLang,
@@ -6036,18 +6064,24 @@ export async function GET(
           const logoPath = selectedLogo?.file_path || null;
 
           const localizedPosterPath =
-            pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
+            pickByLanguageWithFallback(
+              posterCollection,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              preferredPosterPath
+            )?.file_path || preferredPosterPath;
           let originalPosterPath =
             localizedPosterPath ||
-            details?.poster_path ||
-            media?.poster_path ||
             posterCollection[0]?.file_path;
           const localizedBackdropPath =
-            pickByLanguageWithFallback(backdropCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path || null;
+            pickByLanguageWithFallback(
+              backdropCollection,
+              requestedImageLang,
+              FALLBACK_IMAGE_LANGUAGE,
+              preferredBackdropPath
+            )?.file_path || preferredBackdropPath;
           const originalBackdropPath =
             localizedBackdropPath ||
-            details?.backdrop_path ||
-            media?.backdrop_path ||
             backdropCollection[0]?.file_path;
 
           // Kitsu IDs usually represent a specific anime season: prefer season posters over unified show posters.
@@ -6109,7 +6143,12 @@ export async function GET(
 
             originalPosterPath =
               seasonPosterPath ||
-              pickByLanguageWithFallback(posterCollection, requestedImageLang, FALLBACK_IMAGE_LANGUAGE)?.file_path ||
+              pickByLanguageWithFallback(
+                posterCollection,
+                requestedImageLang,
+                FALLBACK_IMAGE_LANGUAGE,
+                seasonPosterPath
+              )?.file_path ||
               originalPosterPath;
           }
 

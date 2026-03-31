@@ -121,6 +121,7 @@ Main endpoint:
 
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=it`
+- **Spain Spanish poster**: `/poster/tt7798634.jpg?ratings=imdb,tmdb&lang=es-ES`
 - **Minimal backdrop**: `/backdrop/tmdb:603.jpg?ratings=mdblist&style=plain`
 
 ### Supported Query Parameters
@@ -129,7 +130,7 @@ Main endpoint:
 |-----------|-------------|------------------|---------|
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo`, `thumbnail` | - |
 | `id` | Media ID (Path) | IMDb (tt...), TMDB (tmdb:..., tmdb:movie:..., tmdb:tv:..., tmdb:series:...), Kitsu (kitsu:...) | - |
-| `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
+| `lang` | TMDB language code | Any TMDB language code (e.g. `it`, `en`, `es-ES`, `es-MX`, `pt-PT`, `pt-BR`) | `en` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
@@ -217,7 +218,7 @@ backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, lette
 logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
                         | myanimelist, anilist, kitsu (logo only)                             |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+lang                    | Any TMDB language code (en, it, es-ES, es-MX, pt-PT, pt-BR, etc.)    | en
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto

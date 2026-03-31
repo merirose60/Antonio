@@ -9,6 +9,7 @@ import {
   parseAddonBaseUrl,
   type ProxyConfig,
 } from '@/lib/addonProxy';
+import { applyProxyCatalogOverrides, unwrapProxyCatalogVariantId } from '@/lib/proxyCatalog';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -427,7 +428,7 @@ const translateMetaPayload = async (
   }
 
   const nextMeta: Record<string, unknown> = { ...meta };
-  translateTextFields(nextMeta, null, translatedOverview);
+  translateTextFields(nextMeta, translatedTitle, translatedOverview);
 
   if (tmdbRef.type === 'tv' && Array.isArray(nextMeta.videos) && nextMeta.videos.length > 0) {
     const videos = nextMeta.videos as Array<Record<string, unknown>>;
@@ -753,6 +754,12 @@ export async function GET(
       id: proxyId,
       name: `ERDB Proxy - ${originalName}`,
       description: `${originalDescription} (proxied via ERDB)`,
+      catalogs: applyProxyCatalogOverrides(manifest.catalogs, {
+        names: config.catalogNames,
+        hidden: config.hiddenCatalogs,
+        searchDisabled: config.searchDisabledCatalogs,
+        discoverOnly: config.discoverOnlyCatalogs,
+      }),
     };
 
     return NextResponse.json(proxyManifest, { status: 200, headers: corsHeaders });
@@ -771,9 +778,18 @@ export async function GET(
       ? (resourceSegments[1] || null)
       : null;
   const forwardUrl = new URL(originBase);
+  const normalizedResourceSegments =
+    resource === 'catalog' && resourceSegments[2]
+      ? [
+          resourceSegments[0],
+          resourceSegments[1],
+          unwrapProxyCatalogVariantId(resourceSegments[2]),
+          ...resourceSegments.slice(3),
+        ]
+      : resourceSegments;
   // Preserve Stremio "extra" path segments like `search=...` and `skip=...`.
   // Encoding each segment would turn `=` into `%3D`, breaking upstream parsing.
-  forwardUrl.pathname = `${forwardUrl.pathname.replace(/\/$/, '')}/${resourceSegments.join('/')}`;
+  forwardUrl.pathname = `${forwardUrl.pathname.replace(/\/$/, '')}/${normalizedResourceSegments.join('/')}`;
 
   const forwardParams = new URLSearchParams();
   for (const [key, value] of searchParams.entries()) {

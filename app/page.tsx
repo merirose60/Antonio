@@ -52,19 +52,20 @@ import {
   RATING_STYLE_OPTIONS,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import {
+  buildSupportedLanguageList,
+  getTmdbLanguageBase,
+  normalizeTmdbLanguageCode,
+  type SupportedLanguage,
+  type TmdbConfigurationLanguage,
+} from '@/lib/tmdbLanguage';
+import {
+  normalizeProxyCatalogBooleanOverrides,
+  normalizeProxyCatalogKeyList,
+  normalizeProxyCatalogNameOverrides,
+  type ProxyCatalogDescriptor,
+} from '@/lib/proxyCatalog';
 
-const SUPPORTED_LANGUAGES = [
-  { code: 'en', label: 'English', flag: '\uD83C\uDDFA\uD83C\uDDF8' },
-  { code: 'it', label: 'Italiano', flag: '\uD83C\uDDEE\uD83C\uDDF9' },
-  { code: 'es', label: 'Espa\u00f1ol', flag: '\uD83C\uDDEA\uD83C\uDDF8' },
-  { code: 'fr', label: 'Fran\u00e7ais', flag: '\uD83C\uDDEB\uD83C\uDDF7' },
-  { code: 'de', label: 'Deutsch', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
-  { code: 'pt', label: 'Portugu\u00eas', flag: '\uD83C\uDDF5\uD83C\uDDF9' },
-  { code: 'ru', label: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439', flag: '\uD83C\uDDF7\uD83C\uDDFA' },
-  { code: 'ja', label: '\u65e5\u672c\u8a9e', flag: '\uD83C\uDDEF\uD83C\uDDF5' },
-  { code: 'zh', label: '\u4e2d\u6587', flag: '\uD83C\uDDE8\uD83C\uDDF3' },
-  { code: 'tr', label: 'T\u00fcrk\u00e7e', flag: '\uD83C\uDDF9\uD83C\uDDF7' },
-];
 const VISIBLE_RATING_PROVIDER_OPTIONS = RATING_PROVIDER_OPTIONS;
 const THUMBNAIL_SUPPORTED_RATINGS: RatingPreference[] = ['tmdb', 'imdb'];
 const EPISODE_ID_PATTERN = /^.+:\d+:\d+$/;
@@ -105,6 +106,7 @@ const MDBLIST_KEY_STORAGE_KEY = 'erdb_mdblist_key';
 const SIMKL_CLIENT_ID_STORAGE_KEY = 'erdb_simkl_client_id';
 const PREVIEW_CONFIG_STORAGE_KEY = 'erdb_preview_config';
 const EXPORT_CONFIG_VERSION = 1;
+const TMDB_LANGUAGE_DOC_EXAMPLES = 'TMDB language code (en, es-ES, es-MX, pt-PT, pt-BR, etc.)';
 const RATING_PROVIDER_IDS = new Set(RATING_PROVIDER_OPTIONS.map((option) => option.id));
 const isRatingProviderId = (value: string): value is RatingPreference =>
   RATING_PROVIDER_IDS.has(value as RatingPreference);
@@ -285,7 +287,7 @@ const buildAiometadataPattern = (options: {
   const params: Array<[string, string]> = [
     ['tmdbKey', tmdbKey || '{tmdb_key}'],
     ['mdblistKey', mdblistKey || '{mdblist_key}'],
-    ['lang', '{language_short}'],
+    ['lang', '{language_code}'],
   ];
 
   if (simklClientId) {
@@ -518,7 +520,8 @@ export default function Home() {
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
-  const [supportedLanguages, setSupportedLanguages] = useState(SUPPORTED_LANGUAGES);
+  const [tmdbLanguages, setTmdbLanguages] = useState<TmdbConfigurationLanguage[]>([]);
+  const [tmdbPrimaryTranslations, setTmdbPrimaryTranslations] = useState<string[]>([]);
   const [mdblistKey, setMdblistKey] = useState('');
   const [tmdbKey, setTmdbKey] = useState('');
   const [simklClientId, setSimklClientId] = useState('');
@@ -531,6 +534,13 @@ export default function Home() {
     thumbnail: true,
   });
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
+  const [proxyCatalogs, setProxyCatalogs] = useState<ProxyCatalogDescriptor[]>([]);
+  const [proxyCatalogNames, setProxyCatalogNames] = useState<Record<string, string>>({});
+  const [proxyHiddenCatalogs, setProxyHiddenCatalogs] = useState<string[]>([]);
+  const [proxySearchDisabledCatalogs, setProxySearchDisabledCatalogs] = useState<string[]>([]);
+  const [proxyDiscoverOnlyCatalogs, setProxyDiscoverOnlyCatalogs] = useState<Record<string, boolean>>({});
+  const [proxyCatalogsStatus, setProxyCatalogsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [proxyCatalogsError, setProxyCatalogsError] = useState('');
   const [proxyCopied, setProxyCopied] = useState(false);
   const [configCopied, setConfigCopied] = useState(false);
   const [showConfigString, setShowConfigString] = useState(false);
@@ -545,6 +555,52 @@ export default function Home() {
   const [importMessage, setImportMessage] = useState('');
   const navRef = useRef<HTMLElement | null>(null);
   const baseUrl = normalizeBaseUrl(useClientOrigin());
+  const hasTmdbKey = tmdbKey.length > 10;
+  const supportedLanguages: SupportedLanguage[] = useMemo(
+    () =>
+      buildSupportedLanguageList({
+        languages: hasTmdbKey ? tmdbLanguages : [],
+        primaryTranslations: hasTmdbKey ? tmdbPrimaryTranslations : [],
+      }),
+    [hasTmdbKey, tmdbLanguages, tmdbPrimaryTranslations]
+  );
+  const effectiveLang = useMemo(() => {
+    const normalizedLang = normalizeTmdbLanguageCode(lang) || lang;
+
+    if (!hasTmdbKey || supportedLanguages.length === 0) {
+      return normalizedLang;
+    }
+
+    if (normalizedLang && supportedLanguages.some((language) => language.code === normalizedLang)) {
+      return normalizedLang;
+    }
+
+    const baseCode = getTmdbLanguageBase(normalizedLang);
+    return (
+      (baseCode
+        ? supportedLanguages.find((language) => getTmdbLanguageBase(language.code) === baseCode)?.code
+        : null) ||
+      supportedLanguages.find((language) => language.code === 'en')?.code ||
+      supportedLanguages[0]?.code ||
+      normalizedLang
+    );
+  }, [hasTmdbKey, lang, supportedLanguages]);
+  const sanitizedProxyCatalogNames = useMemo(
+    () => normalizeProxyCatalogNameOverrides(proxyCatalogNames) || {},
+    [proxyCatalogNames]
+  );
+  const sanitizedProxyHiddenCatalogs = useMemo(
+    () => normalizeProxyCatalogKeyList(proxyHiddenCatalogs) || [],
+    [proxyHiddenCatalogs]
+  );
+  const sanitizedProxySearchDisabledCatalogs = useMemo(
+    () => normalizeProxyCatalogKeyList(proxySearchDisabledCatalogs) || [],
+    [proxySearchDisabledCatalogs]
+  );
+  const sanitizedProxyDiscoverOnlyCatalogs = useMemo(
+    () => normalizeProxyCatalogBooleanOverrides(proxyDiscoverOnlyCatalogs) || {},
+    [proxyDiscoverOnlyCatalogs]
+  );
 
   const [copied, setCopied] = useState(false);
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -679,22 +735,126 @@ export default function Home() {
   }, [scrollToHash]);
 
   useEffect(() => {
-    if (tmdbKey && tmdbKey.length > 10) {
-      fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            const formatted = data.map((l: any) => ({
-              code: l.iso_639_1,
-              label: l.english_name || l.name,
-              flag: '\uD83C\uDF10'
-            })).sort((a, b) => a.label.localeCompare(b.label));
-            setSupportedLanguages(formatted);
-          }
-        })
-        .catch(() => { });
+    let cancelled = false;
+
+    if (!hasTmdbKey) {
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [tmdbKey]);
+
+    Promise.all([
+      fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`).then((res) => res.json()),
+      fetch(`https://api.themoviedb.org/3/configuration/primary_translations?api_key=${tmdbKey}`).then((res) =>
+        res.json()
+      ),
+    ])
+      .then(([languagesResponse, primaryTranslationsResponse]) => {
+        if (cancelled) {
+          return;
+        }
+
+        setTmdbLanguages(Array.isArray(languagesResponse) ? languagesResponse : []);
+        setTmdbPrimaryTranslations(
+          Array.isArray(primaryTranslationsResponse)
+            ? primaryTranslationsResponse.filter((entry): entry is string => typeof entry === 'string')
+            : []
+        );
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setTmdbLanguages([]);
+        setTmdbPrimaryTranslations([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasTmdbKey, tmdbKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const manifestUrl = normalizeManifestUrl(proxyManifestUrl);
+
+    if (!manifestUrl || isBareHttpUrl(manifestUrl)) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    queueMicrotask(() => {
+      if (cancelled) {
+        return;
+      }
+      setProxyCatalogsStatus('loading');
+      setProxyCatalogsError('');
+    });
+
+    fetch(`/api/proxy-manifest?url=${encodeURIComponent(manifestUrl)}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { catalogs?: ProxyCatalogDescriptor[]; error?: string }
+          | null;
+        if (!response.ok) {
+          throw new Error(
+            typeof payload?.error === 'string' && payload.error
+              ? payload.error
+              : 'Unable to load catalogs from the source manifest.'
+          );
+        }
+        return payload;
+      })
+      .then((payload) => {
+        if (cancelled) {
+          return;
+        }
+
+        const catalogs = Array.isArray(payload?.catalogs) ? payload.catalogs : [];
+        setProxyCatalogs(catalogs);
+        const allowedKeys = new Set(catalogs.map((catalog) => catalog.key));
+        setProxyCatalogNames((current) => {
+          return Object.fromEntries(
+            Object.entries(normalizeProxyCatalogNameOverrides(current) || {}).filter(([key]) =>
+              allowedKeys.has(key)
+            )
+          );
+        });
+        setProxyHiddenCatalogs((current) =>
+          (normalizeProxyCatalogKeyList(current) || []).filter((key) => allowedKeys.has(key))
+        );
+        setProxySearchDisabledCatalogs((current) =>
+          (normalizeProxyCatalogKeyList(current) || []).filter((key) => allowedKeys.has(key))
+        );
+        setProxyDiscoverOnlyCatalogs((current) =>
+          Object.fromEntries(
+            Object.entries(normalizeProxyCatalogBooleanOverrides(current) || {}).filter(([key]) =>
+              allowedKeys.has(key)
+            )
+          )
+        );
+        setProxyCatalogsStatus('ready');
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setProxyCatalogs([]);
+        setProxyCatalogsStatus('error');
+        setProxyCatalogsError(
+          error instanceof Error && error.message
+            ? error.message
+            : 'Unable to load catalogs from the source manifest.'
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [proxyManifestUrl]);
 
   const handleCopyPrompt = useCallback(() => {
     const prompt = `Act as an expert addon developer. I want to implement the ERDB Stateless API into my media center addon.
@@ -724,7 +884,7 @@ backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, lette
 logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
                         | metacritic, metacriticuser, trakt, simkl, rogerebert,               |
                         | myanimelist, anilist, kitsu (logo only)                             |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+lang                    | ${TMDB_LANGUAGE_DOC_EXAMPLES}                 | en
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | auto
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
@@ -746,6 +906,8 @@ thumbnailSize           | small, medium, large                                  
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 simklClientId (OPTIONAL)| Your SIMKL client_id for direct SIMKL ratings                        | -
+
+LANG NOTE: Pass cfg.lang through exactly as the TMDB language code provided by ERDB (for example en, it, es-ES, pt-BR).
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the \"erdbConfig\" field (no modal and no extra settings panels).
@@ -803,7 +965,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         : posterQualityBadgesStyle;
     const query = new URLSearchParams({
       ratingStyle: ratingStyleForType,
-      lang,
+      lang: effectiveLang,
     });
     if (previewType === 'poster') {
       query.set('posterRatings', ratingsQuery);
@@ -890,7 +1052,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
   }, [
     previewType,
     mediaId,
-    lang,
+    effectiveLang,
     posterImageText,
     backdropImageText,
     posterRatingPreferences,
@@ -955,8 +1117,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       config.thumbnailRatings = thumbnailRatingsQuery;
       config.logoRatings = logoRatingsQuery;
     }
-    if (lang) {
-      config.lang = lang;
+    if (effectiveLang) {
+      config.lang = effectiveLang;
     }
     if (posterStreamBadges !== 'auto') {
       config.posterStreamBadges = posterStreamBadges;
@@ -1040,7 +1202,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     posterQualityBadgesPosition,
     posterQualityBadgesStyle,
     backdropQualityBadgesStyle,
-    lang,
+    effectiveLang,
     posterRatingStyle,
     backdropRatingStyle,
     logoRatingStyle,
@@ -1068,7 +1230,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       return '';
     }
 
-    const config: Record<string, string | boolean> = {
+    const config: Record<string, unknown> = {
       url: manifestUrl,
       tmdbKey: tmdb,
       mdblistKey: mdb,
@@ -1093,8 +1255,8 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       config.thumbnailRatings = proxyThumbnailRatingsQuery;
       config.logoRatings = proxyLogoRatingsQuery;
     }
-    if (lang) {
-      config.lang = lang;
+    if (effectiveLang) {
+      config.lang = effectiveLang;
     }
     if (posterStreamBadges !== 'auto') {
       config.posterStreamBadges = posterStreamBadges;
@@ -1126,6 +1288,18 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     config.thumbnailEnabled = proxyEnabledTypes.thumbnail;
     if (proxyTranslateMeta) {
       config.translateMeta = true;
+    }
+    if (Object.keys(sanitizedProxyCatalogNames).length > 0) {
+      config.catalogNames = sanitizedProxyCatalogNames;
+    }
+    if (sanitizedProxyHiddenCatalogs.length > 0) {
+      config.hiddenCatalogs = sanitizedProxyHiddenCatalogs;
+    }
+    if (sanitizedProxySearchDisabledCatalogs.length > 0) {
+      config.searchDisabledCatalogs = sanitizedProxySearchDisabledCatalogs;
+    }
+    if (Object.keys(sanitizedProxyDiscoverOnlyCatalogs).length > 0) {
+      config.discoverOnlyCatalogs = sanitizedProxyDiscoverOnlyCatalogs;
     }
 
     if (posterRatingsLayout) {
@@ -1174,7 +1348,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     backdropRatingPreferences,
     thumbnailRatingPreferences,
     logoRatingPreferences,
-    lang,
+    effectiveLang,
     posterStreamBadges,
     backdropStreamBadges,
     shouldShowPosterQualityBadgesSide,
@@ -1199,6 +1373,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     proxyAiometadataProvider,
     proxyEnabledTypes,
     proxyTranslateMeta,
+    sanitizedProxyCatalogNames,
+    sanitizedProxyHiddenCatalogs,
+    sanitizedProxySearchDisabledCatalogs,
+    sanitizedProxyDiscoverOnlyCatalogs,
     baseUrl,
   ]);
 
@@ -1341,7 +1519,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       createdAt: new Date().toISOString(),
       previewType,
       mediaId,
-      lang,
+      lang: effectiveLang,
       posterImageText,
       backdropImageText,
       posterRatingPreferences,
@@ -1370,6 +1548,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       proxyManifestUrl,
       proxyEnabledTypes,
       translateMeta: proxyTranslateMeta,
+      proxyCatalogNames: sanitizedProxyCatalogNames,
+      proxyHiddenCatalogs: sanitizedProxyHiddenCatalogs,
+      proxySearchDisabledCatalogs: sanitizedProxySearchDisabledCatalogs,
+      proxyDiscoverOnlyCatalogs: sanitizedProxyDiscoverOnlyCatalogs,
     };
 
     if (includeKeys) {
@@ -1398,7 +1580,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       setMediaId(payload.mediaId);
     }
     if (typeof payload.lang === 'string') {
-      setLang(payload.lang);
+      setLang(normalizeTmdbLanguageCode(payload.lang) || payload.lang);
     }
     if (typeof payload.previewType === 'string' && isPreviewType(payload.previewType)) {
       setPreviewType(payload.previewType);
@@ -1526,7 +1708,15 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     }
 
     if (typeof payload.proxyManifestUrl === 'string') {
-      setProxyManifestUrl(normalizeManifestUrl(payload.proxyManifestUrl, true));
+      const nextProxyManifestUrl = normalizeManifestUrl(payload.proxyManifestUrl, true);
+      setProxyManifestUrl(nextProxyManifestUrl);
+      setProxyCatalogs([]);
+      setProxyCatalogNames({});
+      setProxyHiddenCatalogs([]);
+      setProxySearchDisabledCatalogs([]);
+      setProxyDiscoverOnlyCatalogs({});
+      setProxyCatalogsStatus('idle');
+      setProxyCatalogsError('');
     }
     if (isProxyEpisodeProvider(payload.proxyAiometadataProvider)) {
       setProxyAiometadataProvider(payload.proxyAiometadataProvider);
@@ -1542,6 +1732,38 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     }
     if (typeof payload.translateMeta === 'boolean') {
       setProxyTranslateMeta(payload.translateMeta);
+    }
+    const importedProxyCatalogNames =
+      normalizeProxyCatalogNameOverrides(payload.proxyCatalogNames) ||
+      normalizeProxyCatalogNameOverrides(payload.catalogNames);
+    if (importedProxyCatalogNames) {
+      setProxyCatalogNames(importedProxyCatalogNames);
+    } else if ('proxyCatalogNames' in payload || 'catalogNames' in payload) {
+      setProxyCatalogNames({});
+    }
+    const importedHiddenCatalogs =
+      normalizeProxyCatalogKeyList(payload.proxyHiddenCatalogs) ||
+      normalizeProxyCatalogKeyList(payload.hiddenCatalogs);
+    if (importedHiddenCatalogs) {
+      setProxyHiddenCatalogs(importedHiddenCatalogs);
+    } else if ('proxyHiddenCatalogs' in payload || 'hiddenCatalogs' in payload) {
+      setProxyHiddenCatalogs([]);
+    }
+    const importedSearchDisabledCatalogs =
+      normalizeProxyCatalogKeyList(payload.proxySearchDisabledCatalogs) ||
+      normalizeProxyCatalogKeyList(payload.searchDisabledCatalogs);
+    if (importedSearchDisabledCatalogs) {
+      setProxySearchDisabledCatalogs(importedSearchDisabledCatalogs);
+    } else if ('proxySearchDisabledCatalogs' in payload || 'searchDisabledCatalogs' in payload) {
+      setProxySearchDisabledCatalogs([]);
+    }
+    const importedDiscoverOnlyCatalogs =
+      normalizeProxyCatalogBooleanOverrides(payload.proxyDiscoverOnlyCatalogs) ||
+      normalizeProxyCatalogBooleanOverrides(payload.discoverOnlyCatalogs);
+    if (importedDiscoverOnlyCatalogs) {
+      setProxyDiscoverOnlyCatalogs(importedDiscoverOnlyCatalogs);
+    } else if ('proxyDiscoverOnlyCatalogs' in payload || 'discoverOnlyCatalogs' in payload) {
+      setProxyDiscoverOnlyCatalogs({});
     }
 
     setImportStatus('success');
@@ -1570,7 +1792,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       version: EXPORT_CONFIG_VERSION,
       previewType,
       mediaId,
-      lang,
+      lang: effectiveLang,
       posterImageText,
       backdropImageText,
       posterRatingPreferences,
@@ -1599,12 +1821,16 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       proxyManifestUrl,
       proxyEnabledTypes,
       translateMeta: proxyTranslateMeta,
+      proxyCatalogNames: sanitizedProxyCatalogNames,
+      proxyHiddenCatalogs: sanitizedProxyHiddenCatalogs,
+      proxySearchDisabledCatalogs: sanitizedProxySearchDisabledCatalogs,
+      proxyDiscoverOnlyCatalogs: sanitizedProxyDiscoverOnlyCatalogs,
     };
     safeLocalStorageSet(PREVIEW_CONFIG_STORAGE_KEY, JSON.stringify(payload));
   }, [
     previewType,
     mediaId,
-    lang,
+    effectiveLang,
     posterImageText,
     backdropImageText,
     posterRatingPreferences,
@@ -1633,6 +1859,10 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     proxyManifestUrl,
     proxyEnabledTypes,
     proxyTranslateMeta,
+    sanitizedProxyCatalogNames,
+    sanitizedProxyHiddenCatalogs,
+    sanitizedProxySearchDisabledCatalogs,
+    sanitizedProxyDiscoverOnlyCatalogs,
   ]);
 
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1758,12 +1988,19 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       state: {
       previewType,
       mediaId,
-      lang,
+      lang: effectiveLang,
       supportedLanguages,
         tmdbKey,
         mdblistKey,
         simklClientId,
       proxyManifestUrl,
+      proxyCatalogs,
+      proxyCatalogNames: sanitizedProxyCatalogNames,
+      proxyHiddenCatalogs: sanitizedProxyHiddenCatalogs,
+      proxySearchDisabledCatalogs: sanitizedProxySearchDisabledCatalogs,
+      proxyDiscoverOnlyCatalogs: sanitizedProxyDiscoverOnlyCatalogs,
+      proxyCatalogsStatus,
+      proxyCatalogsError,
       proxyEnabledTypes,
       proxyTranslateMeta,
       exportStatus,
@@ -1845,7 +2082,87 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       setActiveQualityBadgesStyle,
       toggleRatingPreference,
       reorderRatingPreference,
-      updateProxyManifestUrl: (value) => setProxyManifestUrl(normalizeManifestUrl(value, true)),
+      updateProxyManifestUrl: (value) => {
+        setProxyManifestUrl(normalizeManifestUrl(value, true));
+        setProxyCatalogs([]);
+        setProxyCatalogNames({});
+        setProxyHiddenCatalogs([]);
+        setProxySearchDisabledCatalogs([]);
+        setProxyDiscoverOnlyCatalogs({});
+        setProxyCatalogsStatus('idle');
+        setProxyCatalogsError('');
+      },
+      updateProxyCatalogName: (key, value) =>
+        setProxyCatalogNames((current) => {
+          const trimmedKey = key.trim();
+          if (!trimmedKey) {
+            return current;
+          }
+
+          const nextValue = value.trim();
+          if (!nextValue) {
+            if (!(trimmedKey in current)) {
+              return current;
+            }
+            const next = { ...current };
+            delete next[trimmedKey];
+            return next;
+          }
+
+          return {
+            ...current,
+            [trimmedKey]: nextValue,
+          };
+        }),
+      toggleProxyCatalogHidden: (key) =>
+        setProxyHiddenCatalogs((current) => {
+          const trimmedKey = key.trim();
+          if (!trimmedKey) {
+            return current;
+          }
+          return current.includes(trimmedKey)
+            ? current.filter((entry) => entry !== trimmedKey)
+            : [...current, trimmedKey];
+        }),
+      toggleProxyCatalogSearchDisabled: (key) =>
+        setProxySearchDisabledCatalogs((current) => {
+          const trimmedKey = key.trim();
+          if (!trimmedKey) {
+            return current;
+          }
+          return current.includes(trimmedKey)
+            ? current.filter((entry) => entry !== trimmedKey)
+            : [...current, trimmedKey];
+        }),
+      setProxyCatalogDiscoverOnly: (key, enabled) =>
+        setProxyDiscoverOnlyCatalogs((current) => {
+          const trimmedKey = key.trim();
+          if (!trimmedKey) {
+            return current;
+          }
+
+          const sourceValue = proxyCatalogs.find((catalog) => catalog.key === trimmedKey)?.discoverOnly;
+          if (sourceValue === enabled) {
+            if (!(trimmedKey in current)) {
+              return current;
+            }
+            const next = { ...current };
+            delete next[trimmedKey];
+            return next;
+          }
+
+          return {
+            ...current,
+            [trimmedKey]: enabled,
+          };
+        }),
+      resetProxyCatalogNames: () => setProxyCatalogNames({}),
+      resetProxyCatalogCustomizations: () => {
+        setProxyCatalogNames({});
+        setProxyHiddenCatalogs([]);
+        setProxySearchDisabledCatalogs([]);
+        setProxyDiscoverOnlyCatalogs({});
+      },
       toggleProxyEnabledType,
       toggleProxyTranslateMeta: () => setProxyTranslateMeta((value) => !value),
       toggleConfigStringVisibility: () => {
