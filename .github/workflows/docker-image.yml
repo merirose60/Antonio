@@ -1,13 +1,6 @@
 name: Docker Image
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - README.md
-      - .github/README.md
-      - CHANGELOG.md
   pull_request:
     paths-ignore:
       - README.md
@@ -49,8 +42,6 @@ jobs:
         id: context
         env:
           EVENT_NAME: ${{ github.event_name }}
-          REF: ${{ github.ref }}
-          BEFORE_SHA: ${{ github.event.before }}
           WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
@@ -69,15 +60,6 @@ jobs:
             if [[ "$WORKFLOW_CONCLUSION" != "success" ]] || [[ "$WORKFLOW_HEAD_BRANCH" != "main" ]]; then
               should_run="false"
             fi
-          elif [[ "$EVENT_NAME" == "push" ]] && [[ "$REF" == "refs/heads/main" ]]; then
-            previous_version=""
-            if [[ -n "$BEFORE_SHA" ]] && git cat-file -e "${BEFORE_SHA}:package.json" 2>/dev/null; then
-              previous_version=$(git show "${BEFORE_SHA}:package.json" | node -e "let data=''; process.stdin.on('data', chunk => data += chunk); process.stdin.on('end', () => process.stdout.write(JSON.parse(data).version || ''));")
-            fi
-
-            if [[ -n "$previous_version" ]] && [[ "$package_version" != "$previous_version" ]]; then
-              should_run="false"
-            fi
           fi
 
           echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
@@ -91,10 +73,10 @@ jobs:
               echo "type=raw,value=sha-${short_sha}"
             else
               echo "type=sha"
-              if [[ "$EVENT_NAME" == "push" ]] || [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+              if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
                 echo "type=ref,event=branch"
               fi
-              if [[ "$REF" == "refs/heads/main" ]]; then
+              if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
                 echo "type=raw,value=latest"
               fi
             fi
