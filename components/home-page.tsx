@@ -105,10 +105,10 @@ const POSTER_QUALITY_BADGE_POSITION_OPTIONS: Array<{
   id: PosterQualityBadgesPosition;
   label: string;
 }> = [
-  { id: 'auto', label: 'Auto' },
-  { id: 'left', label: 'Left' },
-  { id: 'right', label: 'Right' },
-];
+    { id: 'auto', label: 'Auto' },
+    { id: 'left', label: 'Left' },
+    { id: 'right', label: 'Right' },
+  ];
 const TMDB_KEY_STORAGE_KEY = 'erdb_tmdb_key';
 const MDBLIST_KEY_STORAGE_KEY = 'erdb_mdblist_key';
 const SIMKL_CLIENT_ID_STORAGE_KEY = 'erdb_simkl_client_id';
@@ -202,7 +202,7 @@ const safeLocalStorageRemove = (key: string) => {
   }
 };
 
-const subscribeToNothing = () => () => {};
+const subscribeToNothing = () => () => { };
 
 const useClientOrigin = () =>
   useSyncExternalStore(
@@ -654,7 +654,7 @@ export default function HomePage({ mode = 'landing' }: { mode?: HomePageMode }) 
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [aiometadataCopiedType, setAiometadataCopiedType] = useState<AiometadataPatternType | null>(null);
   const [aiometadataEpisodeProvider, setAiometadataEpisodeProvider] = useState<AiometadataEpisodeProvider>('realimdb');
-  const [currentVersion, setCurrentVersion] = useState('0.2.3');
+  const [currentVersion, setCurrentVersion] = useState('0.2.4');
   const [githubPackageVersion, setGithubPackageVersion] = useState<string | null>(null);
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
   const [exportStatus, setExportStatus] = useState<'idle' | 'with' | 'without'>('idle');
@@ -801,7 +801,7 @@ export default function HomePage({ mode = 'landing' }: { mode?: HomePageMode }) 
           setRepoUrl(payload.repoUrl);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -1055,7 +1055,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
           ? backdropRatingPreferences
           : previewType === 'thumbnail'
             ? thumbnailRatingPreferences
-          : logoRatingPreferences;
+            : logoRatingPreferences;
     const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferencesForType);
     const ratingStyleForType =
       previewType === 'poster'
@@ -2095,17 +2095,17 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         ? 'Backdrop Ratings Style'
         : previewType === 'thumbnail'
           ? 'Thumbnail Ratings Style'
-        : 'Logo Ratings Style';
+          : 'Logo Ratings Style';
   const textLabel =
     previewType === 'backdrop' ? 'Backdrop Text' : previewType === 'thumbnail' ? 'Thumbnail Text' : 'Poster Text';
   const providersLabel =
     previewType === 'poster'
       ? 'Poster Providers'
       : previewType === 'backdrop'
-      ? 'Backdrop Providers'
-      : previewType === 'thumbnail'
+        ? 'Backdrop Providers'
+        : previewType === 'thumbnail'
           ? 'Thumbnail Providers'
-        : 'Logo Providers';
+          : 'Logo Providers';
   const ratingProviderRows =
     previewType === 'poster'
       ? posterRatingRows
@@ -2113,7 +2113,7 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
         ? backdropRatingRows
         : previewType === 'thumbnail'
           ? thumbnailRatingRows
-        : logoRatingRows;
+          : logoRatingRows;
   const visibleRatingProviderRows =
     previewType === 'thumbnail'
       ? ratingProviderRows.filter((row) => THUMBNAIL_SUPPORTED_RATINGS.includes(row.id))
@@ -2157,14 +2157,14 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     refs: {
       navRef,
     },
-      state: {
+    state: {
       previewType,
       mediaId,
       lang: effectiveLang,
       supportedLanguages,
-        tmdbKey,
-        mdblistKey,
-        simklClientId,
+      tmdbKey,
+      mdblistKey,
+      simklClientId,
       proxyManifestUrl,
       proxyCatalogs,
       proxyCatalogNames: sanitizedProxyCatalogNames,
@@ -2199,13 +2199,13 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
     },
     derived: {
       baseUrl,
-    previewUrl,
-    proxyUrl,
+      previewUrl,
+      proxyUrl,
       currentVersion,
       githubPackageVersion,
       repoUrl,
       previewNotice,
-    canGenerateConfig,
+      canGenerateConfig,
       canGenerateProxy,
       isConfigStringVisible,
       isProxyUrlVisible,
@@ -2236,9 +2236,9 @@ Skip any params that are undefined. Keep empty ratings/posterRatings/backdropRat
       setPreviewType: handleSetPreviewType,
       setMediaId,
       setLang,
-        setTmdbKey,
-        setMdblistKey,
-        setSimklClientId,
+      setTmdbKey,
+      setMdblistKey,
+      setSimklClientId,
       setPosterRatingsLayout,
       setPosterRatingsMaxPerSide,
       setLogoRatingsMax,

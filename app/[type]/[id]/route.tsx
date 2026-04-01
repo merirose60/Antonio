@@ -473,9 +473,9 @@ const LOGO_BASE_HEIGHT = 320;
 const LOGO_FALLBACK_ASPECT_RATIO = 2.5;
 const LOGO_MIN_WIDTH = 360;
 const LOGO_MAX_WIDTH = 3000;
-const LOGO_BADGE_BOOST_ASPECT_RATIO_THRESHOLD = 5.75;
-const LOGO_BADGE_BOOST_PER_ASPECT_POINT = 0.03;
-const LOGO_BADGE_BOOST_MAX_SCALE = 1.14;
+const LOGO_BADGE_BOOST_ASPECT_RATIO_THRESHOLD = 4.25;
+const LOGO_BADGE_BOOST_PER_ASPECT_POINT = 0.14;
+const LOGO_BADGE_BOOST_MAX_SCALE = 1.45;
 
 const buildProviderMonogram = (label: string) => {
   const cleaned = label.replace(/[^A-Za-z0-9]+/g, ' ').trim();
