@@ -485,11 +485,13 @@ export function WorkspacePageView({ refs, state, derived, actions }: HomePageVie
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#06070b] text-slate-200 selection:bg-orange-400/30 font-[var(--font-body)] xl:h-screen xl:overflow-hidden">
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_60%)] blur-3xl" />
-      <div className="pointer-events-none absolute right-[-220px] top-40 h-[420px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(14,165,233,0.12),_transparent_60%)] blur-3xl" />
-      <div className="pointer-events-none absolute left-[-180px] bottom-[-140px] h-[420px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(20,184,166,0.12),_transparent_60%)] blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,_rgba(255,255,255,0.025),_rgba(255,255,255,0)_40%,_rgba(255,255,255,0.02)_100%)]" />
+    <div className="relative min-h-screen bg-[#06070b] text-slate-200 selection:bg-orange-400/30 font-[var(--font-body)] xl:h-screen xl:overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 h-[520px] w-[760px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.12),_transparent_60%)] blur-3xl" />
+        <div className="absolute right-[-220px] top-40 h-[420px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(14,165,233,0.12),_transparent_60%)] blur-3xl" />
+        <div className="absolute left-[-180px] bottom-[-140px] h-[420px] w-[520px] rounded-full bg-[radial-gradient(circle,_rgba(20,184,166,0.12),_transparent_60%)] blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(255,255,255,0.025),_rgba(255,255,255,0)_40%,_rgba(255,255,255,0.02)_100%)]" />
+      </div>
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-[1840px] flex-col px-3 py-3 sm:px-4 sm:py-4 xl:h-full xl:min-h-0">
         <nav ref={navRef} className="z-50 rounded-[28px] border border-white/10 bg-[#06070b]/72 shadow-[0_24px_70px_-45px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl">
@@ -952,10 +954,10 @@ export function WorkspacePageView({ refs, state, derived, actions }: HomePageVie
                     </div>
                   </div>
                   <div
-                    className="premium-scrollbar mt-3 overflow-x-auto overflow-y-hidden p-3 bg-black/20 rounded-xl"
+                    className="mt-3 overflow-hidden rounded-xl bg-black/20 p-3 xl:premium-scrollbar xl:overflow-x-auto xl:overflow-y-hidden"
                     onWheel={handleHorizontalScrollWheel}
                   >
-                    <div className={`w-max min-w-full font-mono text-xs text-slate-300 whitespace-nowrap pr-2 ${canGenerateConfig && !isConfigStringVisible ? 'select-none' : ''}`}>
+                    <div className={`w-full max-w-full break-all font-mono text-xs leading-5 text-slate-300 whitespace-normal xl:w-max xl:min-w-full xl:whitespace-nowrap xl:pr-2 ${canGenerateConfig && !isConfigStringVisible ? 'select-none' : ''}`}>
                       {displayedConfigString || 'Add TMDB key and MDBList key to generate the config string.'}
                     </div>
                   </div>
@@ -1147,10 +1149,10 @@ export function WorkspacePageView({ refs, state, derived, actions }: HomePageVie
                       Use this URL in Stremio. It ends with manifest.json and has no query params.
                     </p>
                     <div
-                      className="premium-scrollbar mt-3 overflow-x-auto overflow-y-hidden p-4 bg-black/20 rounded-xl"
+                      className="mt-3 overflow-hidden rounded-xl bg-black/20 p-4 xl:premium-scrollbar xl:overflow-x-auto xl:overflow-y-hidden"
                       onWheel={handleHorizontalScrollWheel}
                     >
-                      <div className={`w-max min-w-full font-mono text-xs text-slate-300 whitespace-nowrap ${!isProxyUrlVisible ? 'select-none' : ''}`}>
+                      <div className={`w-full max-w-full break-all font-mono text-xs leading-5 text-slate-300 whitespace-normal xl:w-max xl:min-w-full xl:whitespace-nowrap ${!isProxyUrlVisible ? 'select-none' : ''}`}>
                         {displayedProxyUrl}
                       </div>
                     </div>
