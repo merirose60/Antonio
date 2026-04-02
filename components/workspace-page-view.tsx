@@ -907,7 +907,7 @@ export function WorkspacePageView({ refs, state, derived, actions }: HomePageVie
                             className={
                               previewType === 'logo'
                                 ? 'block w-full h-auto'
-                                : 'h-full w-full object-cover'
+                                : 'h-full w-full object-contain'
                             }
                           />
                         </div>
