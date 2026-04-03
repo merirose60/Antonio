@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0](https://github.com/realbestia1/erdb/compare/v0.2.12...v0.3.0) - 2026-04-03
+
+- Add token-based accounts, API & workspace UI ([9abcadb](https://github.com/realbestia1/erdb/commit/9abcadb4a5b60d414fdb7ff6731488f76416e877))
+  Introduce a token-based account system and workspace flow. Adds new API endpoints (/api/token, /api/workspace-auth, /api/workspace-config) and libraries to manage tokens, accounts, and workspace sessions. The image renderer and proxy were updated to resolve per-token configuration server-side (token-aware routes and proxy config builders), and cache/versioning now uses token update timestamps. The configurator and home UI were updated to support login/registration, persistent active token, token-driven preview/proxy patterns, and workspace session handling. Minor docs and .env.example updates included (ERDB_DATA_DIR).
+
 ## [0.2.12](https://github.com/realbestia1/erdb/compare/v0.2.11...v0.2.12) - 2026-04-02
 
 - Bump version to 0.2.12 and normalize path split ([65e7701](https://github.com/realbestia1/erdb/commit/65e77012f9ea256c6bdc5b1d51c77c1c831f8479))
