@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.27](https://github.com/realbestia1/erdb/compare/v0.3.26...v0.3.27) - 2026-04-14
+
+- Refactor preview image, adjust counters & props, bump v0.3.27 ([600fcbf](https://github.com/realbestia1/erdb/commit/600fcbf5d90c4df371d65dba80ce7b652f721e7f))
+  Extract preview image UI into a PreviewImage component in workspace-preview-panel (manages its own loading state and shimmer/animation), remove unused useEffect import, and simplify preview rendering. Tweak AnimatedCounter to avoid setting state when target is 0 and render 0 directly. Expand HomePage props and hooks to include anime/backdrop/logo language variants and additional rating/thumbnail options; adjust several useMemo dependency arrays and include fanartKey in dependencies. Bump package version to 0.3.27.
+
 ## [0.3.26](https://github.com/realbestia1/erdb/compare/v0.3.25...v0.3.26) - 2026-04-14
 
 - Install dev deps and add prod-deps pruning stage ([52bdbd8](https://github.com/realbestia1/erdb/commit/52bdbd8204d4bb4aff01b18df08240fe7e16ab50))
