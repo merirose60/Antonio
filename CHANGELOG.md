@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.26](https://github.com/realbestia1/erdb/compare/v0.3.25...v0.3.26) - 2026-04-14
+
+- Install dev deps and add prod-deps pruning stage ([52bdbd8](https://github.com/realbestia1/erdb/commit/52bdbd8204d4bb4aff01b18df08240fe7e16ab50))
+  Set NODE_ENV=development and install devDependencies in the deps stage (npm ci --include=dev). Add a prod-deps stage that copies package*.json and node_modules from deps and runs npm prune --omit=dev to strip devDependencies for the runtime image. Update the runner to copy node_modules from prod-deps so builds have dev deps but the final image is smaller and production-only.
+
 ## [0.3.25](https://github.com/realbestia1/erdb/compare/v0.3.24...v0.3.25) - 2026-04-14
 
 - Add workspace configurator password protection ([06ff2b0](https://github.com/realbestia1/erdb/commit/06ff2b05080b8cc57537d76c7d65ec918a355a2c))
