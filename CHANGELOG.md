@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.28](https://github.com/realbestia1/erdb/compare/v0.3.27...v0.3.28) - 2026-04-14
+
+- Use Filmweb API for ID lookup ([701fe21](https://github.com/realbestia1/erdb/commit/701fe21e028a95a3a5f20cb4addfcac37bbf05f2))
+  Replace DuckDuckGo HTML scraping with Filmweb's live search API to find film/serial IDs. Use fetchJsonCached and a new cache key namespace (filmweb:search:v1), filter searchHits by type, and fetch per-title info (/api/v1/title/:id/info) to verify year and title/originalTitle before returning an ID. Remove the regex-based extractFilmwebIdFromText helper and adjust request headers and variable names. Also bump package version to 0.3.28.
+
 ## [0.3.27](https://github.com/realbestia1/erdb/compare/v0.3.26...v0.3.27) - 2026-04-14
 
 - Refactor preview image, adjust counters & props, bump v0.3.27 ([600fcbf](https://github.com/realbestia1/erdb/commit/600fcbf5d90c4df371d65dba80ce7b652f721e7f))
