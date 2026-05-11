@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.2](https://github.com/realbestia1/erdb/compare/v0.4.1...v0.4.2) - 2026-05-11
+
+- Handle poster preset/ratings and bump version ([92cb5b8](https://github.com/realbestia1/erdb/commit/92cb5b8d688b3103c1fc9ddb134290d49486774e))
+  Parse posterConfiguratorPreset and posterRatingsMode from the payload and update component state accordingly: setPosterConfiguratorPreset for 'simple' or 'advanced', and setPosterAverageRatingsEnabled when posterRatingsMode is 'average' (false for 'separate'). Also bump package version to 0.4.2.
+
 ## [0.4.1](https://github.com/realbestia1/erdb/compare/v0.4.0...v0.4.1) - 2026-05-11
 
 - Refactor poster rating config and bump version ([52ea033](https://github.com/realbestia1/erdb/commit/52ea03325ff609bf6ae59f53e13bc768d1e90a9c))
