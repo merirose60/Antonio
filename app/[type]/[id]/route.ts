@@ -179,7 +179,7 @@ const resolveOriginalAwareImageLanguage = (input: {
   ) ||
   normalizeTmdbLanguageCode(input.requestLanguage) ||
   input.fallbackLanguage;
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-thumbnail-v91';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-thumbnail-v99';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -3229,7 +3229,14 @@ const buildGeneratedLogoDataUrl = (title: string) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 <defs>
   <filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.38" />
+    <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="blur" />
+    <feFlood flood-color="#000000" flood-opacity="0.38" />
+    <feComposite in2="blur" operator="in" result="shadow" />
+    <feOffset in="shadow" dx="0" dy="8" result="offsetShadow" />
+    <feMerge>
+      <feMergeNode in="offsetShadow" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
   </filter>
 </defs>
 <text x="${Math.round(width / 2)}" y="${startY}" text-anchor="middle" font-family="Arial Narrow, Trebuchet MS, Arial, sans-serif" font-size="${fontSize}" font-weight="800" font-style="italic" letter-spacing="${letterSpacing}" fill="#ffffff" stroke="rgba(0,0,0,0.65)" stroke-width="${strokeWidth}" paint-order="stroke fill" filter="url(#logo-shadow)">${tspans}</text>
@@ -3583,7 +3590,7 @@ const buildGeneratedLogoVariantDataUrl = async (
           ? 'rgba(255,255,255,0.02)'
           : resolvedPrimaryColor;
     const defs = [
-      `<filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="${shadow.dy}" stdDeviation="${shadow.stdDeviation}" flood-color="${shadow.color}" flood-opacity="${shadow.opacity}" /></filter>`,
+      `<filter id="logo-shadow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceAlpha" stdDeviation="${shadow.stdDeviation}" result="blur" /><feFlood flood-color="${shadow.color}" flood-opacity="${shadow.opacity}" /><feComposite in2="blur" operator="in" result="shadow" /><feOffset in="shadow" dx="0" dy="${shadow.dy}" result="offsetShadow" /><feMerge><feMergeNode in="offsetShadow" /><feMergeNode in="SourceGraphic" /></feMerge></filter>`,
     ];
     const customGradientStops =
       (variant.gradientStops?.length || 0) <= 2
@@ -3663,7 +3670,14 @@ const buildPosterTitleSvg = (title: string, maxWidth: number) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 <defs>
   <filter id="poster-title-shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.5" />
+    <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur" />
+    <feFlood flood-color="#000000" flood-opacity="0.5" />
+    <feComposite in2="blur" operator="in" result="shadow" />
+    <feOffset in="shadow" dx="0" dy="6" result="offsetShadow" />
+    <feMerge>
+      <feMergeNode in="offsetShadow" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
   </filter>
 </defs>
 <text x="${Math.round(width / 2)}" y="${startY}" text-anchor="middle" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" letter-spacing="${letterSpacing}" fill="#ffffff" stroke="rgba(0,0,0,0.65)" stroke-width="${strokeWidth}" paint-order="stroke fill" filter="url(#poster-title-shadow)">${tspans}</text>
@@ -3713,7 +3727,14 @@ const buildThumbnailFallbackTitleSvg = (
     <stop offset="100%" stop-color="rgba(2,6,23,0.92)" />
   </linearGradient>
   <filter id="thumbnail-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%">
-    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.42" />
+    <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur" />
+    <feFlood flood-color="#000000" flood-opacity="0.42" />
+    <feComposite in2="blur" operator="in" result="shadow" />
+    <feOffset in="shadow" dx="0" dy="6" result="offsetShadow" />
+    <feMerge>
+      <feMergeNode in="offsetShadow" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
   </filter>
 </defs>
 <rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="18" fill="url(#thumbnail-fallback-bg)" stroke="rgba(255,255,255,0.14)" filter="url(#thumbnail-fallback-shadow)" />
@@ -4295,16 +4316,17 @@ const buildQualityBadgeSvg = (
     return baseRect(width, chrome.stroke, chrome.fill, chromeExtra);
   };
   const plainDefs = isReferencePlain
-    ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="3.6" flood-color="#000000" flood-opacity="0.90" /></filter></defs>`
+    ? `<defs><filter id="text-shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" /><feFlood flood-color="#000000" flood-opacity="0.80" /><feComposite in2="blur" operator="in" result="shadow" /><feOffset in="shadow" dx="0" dy="2" result="offsetShadow" /><feMerge><feMergeNode in="offsetShadow" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>`
     : '';
-  const filterAttr = isReferencePlain ? ' filter="url(#text-shadow)"' : '';
+  const universalStroke = ' stroke="rgba(0,0,0,0.80)" stroke-width="1.8" paint-order="stroke fill"';
+  const filterAttr = isReferencePlain ? ` filter="url(#text-shadow)"${universalStroke}` : universalStroke;
 
   if (key === '4k') {
     const width = widthOverride ?? Math.round(h * 1.55);
     if (isReferencePlain) {
       const bigSize = Math.round(h * 0.46);
       const bigY = Math.round(h * 0.64);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
 ${plainDefs}
 <text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.06em"${filterAttr}>4K</text>
 </svg>`;
@@ -4318,8 +4340,8 @@ ${plainDefs}
     const rect = buildRect(width, color);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="${color}">4K</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="${color}" letter-spacing="0.06em">ULTRA HD</text>
+<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="${color}"${filterAttr}>4K</text>
+<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="${color}" letter-spacing="0.06em"${filterAttr}>ULTRA HD</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4329,7 +4351,7 @@ ${rect}
     if (isReferencePlain) {
       const textSize = Math.round(h * 0.46);
       const textY = Math.round(h * 0.64);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
 ${plainDefs}
 <text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.06em"${filterAttr}>HDR</text>
 </svg>`;
@@ -4352,8 +4374,8 @@ ${plainDefs}
   </linearGradient>
 </defs>
 ${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="white">HDR</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em">TRUE COLOR</text>
+<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="white"${filterAttr}>HDR</text>
+<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em"${filterAttr}>TRUE COLOR</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4366,7 +4388,7 @@ ${rect}
       const topY = Math.round(h * 0.35);
       const bottomY = Math.round(h * 0.78);
       const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
 ${plainDefs}
 <text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6"${filterAttr}>Dolby</text>
 <text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>VISION</text>
@@ -4381,8 +4403,8 @@ ${plainDefs}
     const rect = buildRect(width, '#e5e7eb');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">VISION</text>
+<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>DOLBY</text>
+<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>VISION</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4395,7 +4417,7 @@ ${rect}
       const topY = Math.round(h * 0.35);
       const bottomY = Math.round(h * 0.78);
       const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
 ${plainDefs}
 <text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6"${filterAttr}>Dolby</text>
 <text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>ATMOS</text>
@@ -4410,8 +4432,8 @@ ${plainDefs}
     const rect = buildRect(width, '#e5e7eb');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs">ATMOS</text>
+<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>DOLBY</text>
+<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>ATMOS</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4421,7 +4443,7 @@ ${rect}
     if (isReferencePlain) {
       const textSize = Math.round(h * 0.42);
       const textY = Math.round(h * 0.63);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
 ${plainDefs}
 <text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.08em"${filterAttr}>REMUX</text>
 </svg>`;
@@ -4433,7 +4455,7 @@ ${plainDefs}
     const rect = buildRect(width, color);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.08em">REMUX</text>
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.08em"${filterAttr}>REMUX</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4566,21 +4588,23 @@ const buildBadgeSvg = ({
   const monogramFill = ratingStyle === 'glass' ? 'white' : accentColor;
   const textShadowFilter =
     ratingStyle === 'plain'
-      ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="3.6" flood-color="#000000" flood-opacity="0.90" /></filter></defs>`
+      ? `<defs><filter id="text-shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" /><feFlood flood-color="#000000" flood-opacity="0.80" /><feComposite in2="blur" operator="in" result="shadow" /><feOffset in="shadow" dx="0" dy="2" result="offsetShadow" /><feMerge><feMergeNode in="offsetShadow" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>`
       : '';
+  const itemFilter = ratingStyle === 'plain' ? ' filter="url(#text-shadow)"' : '';
   const iconImage =
     !iconDataUri
       ? ''
       : ratingStyle === 'plain'
-        ? `<image href="${iconDataUri}" x="${iconImageX}" y="${iconImageY}" width="${renderedIconSize}" height="${renderedIconSize}" preserveAspectRatio="xMidYMid meet" />`
+        ? `<image href="${iconDataUri}" x="${iconImageX}" y="${iconImageY}" width="${renderedIconSize}" height="${renderedIconSize}" preserveAspectRatio="xMidYMid meet"${itemFilter} />`
         : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconImageX}" y="${iconImageY}" width="${renderedIconSize}" height="${renderedIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#icon-clip)" />${iconBorder}`;
   const monogramText =
     iconDataUri || hideIcon
       ? ''
-      : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}">${escapeXml(monogram)}</text>${iconBorder}`;
-  const valueFilter = '';
-  const plainGroupStart = ratingStyle === 'plain' ? '<g filter="url(#text-shadow)">' : '';
-  const plainGroupEnd = ratingStyle === 'plain' ? '</g>' : '';
+      : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}"${itemFilter}>${escapeXml(monogram)}</text>${iconBorder}`;
+  const valueFilter = itemFilter;
+  const valueStroke = ' stroke="rgba(0,0,0,0.80)" stroke-width="1.8" paint-order="stroke fill"';
+  const plainGroupStart = '';
+  const plainGroupEnd = '';
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
   const valueTextAnchor = contentLayout === 'stacked' || hideIcon ? ' text-anchor="middle"' : '';
@@ -4591,16 +4615,14 @@ const buildBadgeSvg = ({
         const genreValue = String(starRatingMatch[1] || '').trim();
         const ratingValue = starRatingMatch[2];
         const genreText = genreValue ? genreValue : '';
-        const starGap = Math.max(4, Math.round(fontSize * 0.18));
-        const genreGap = genreText ? Math.max(6, Math.round(fontSize * 0.20)) : 0;
         const dyOffset = Math.round(fontSize * 0.07);
         
-        return `<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white" text-anchor="middle"${valueFilter}${valueLetterSpacing}>${
-          genreText ? `<tspan fill-opacity="0.72">${escapeXml(genreText)}</tspan><tspan dx="${genreGap}" dy="-${dyOffset}">★</tspan>` : `<tspan dy="-${dyOffset}">★</tspan>`
-        }<tspan dx="${starGap}" dy="${dyOffset}"${valueNumericStyle}>${escapeXml(ratingValue)}</tspan></text>`;
+        return `<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white" text-anchor="middle" xml:space="preserve"${valueFilter}${valueStroke}${valueLetterSpacing}>${
+          genreText ? `<tspan xml:space="preserve" fill-opacity="0.72">${escapeXml(genreText)} </tspan><tspan dy="-${dyOffset}">★</tspan>` : `<tspan dy="-${dyOffset}">★</tspan>`
+        }<tspan xml:space="preserve" dy="${dyOffset}"${valueNumericStyle}> ${escapeXml(ratingValue)}</tspan></text>`;
       })()
-      : `<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}${valueTextAnchor}>${escapeXml(value)}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      : `<text x="${valueX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white"${valueFilter}${valueStroke}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}${valueTextAnchor}>${escapeXml(value)}</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="-4 -4 ${width + 8} ${height + 8}">
 ${textShadowFilter}
 ${outerRect}
 ${plainGroupStart}
