@@ -179,7 +179,7 @@ const resolveOriginalAwareImageLanguage = (input: {
   ) ||
   normalizeTmdbLanguageCode(input.requestLanguage) ||
   input.fallbackLanguage;
-const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-thumbnail-v86';
+const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-thumbnail-v88';
 const TMDB_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.ERDB_TMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
@@ -4599,7 +4599,7 @@ const buildBadgeSvg = ({
         const genreX = groupLeft;
         const starX = groupLeft + genreWidth + genreGap + Math.round(starWidth / 2);
         const ratingX = groupLeft + genreWidth + genreGap + starWidth + starGap;
-        const starY = valueY - Math.round(fontSize * 0.10);
+        const starY = valueY - Math.round(fontSize * 0.05);
         const genreSvg = genreText
           ? `<text x="${genreX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" fill="white" fill-opacity="0.72"${valueFilter}${valueLetterSpacing}>${escapeXml(genreText)}</text>`
           : '';
@@ -6145,8 +6145,22 @@ export async function GET(
   // Extract configuration from token or query parameters
   const token = request.nextUrl.searchParams.get('token') || request.headers.get('x-erdb-token');
   const tokenData = token ? getTokenConfig(token) : null;
-  const tokenConfig = (tokenData?.config || {}) as any;
+  const tokenConfig = (tokenData?.config ? { ...tokenData.config } : {}) as any;
   const tokenUpdatedAt = tokenData?.updatedAt || 0;
+
+  const posterConfiguratorPreset =
+    tokenConfig.posterConfiguratorPreset || request.nextUrl.searchParams.get('posterConfiguratorPreset') || null;
+
+  if (posterConfiguratorPreset === 'simple') {
+    tokenConfig.posterRatingsMode = 'average';
+    if (tokenConfig.posterSimpleRatingSource && tokenConfig.posterSimpleRatingSource !== 'average') {
+      tokenConfig.posterRatingPreferences = tokenConfig.posterSimpleRatingSource;
+    }
+    tokenConfig.posterRatingStyle = 'plain';
+    tokenConfig.posterRatingsLayout = 'bottom';
+    tokenConfig.posterQualityBadgesStyle = 'plain';
+    tokenConfig.posterImageText = 'clean';
+  }
 
   const lang = tokenConfig.lang || request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const posterLang =
@@ -6173,8 +6187,7 @@ export async function GET(
   const posterRatings = getRatings('posterRatingPreferences', 'posterRatings') ?? globalRatings;
   const posterRatingsMode =
     tokenConfig.posterRatingsMode || request.nextUrl.searchParams.get('posterRatingsMode') || null;
-  const posterConfiguratorPreset =
-    tokenConfig.posterConfiguratorPreset || request.nextUrl.searchParams.get('posterConfiguratorPreset') || null;
+  // Removed duplicate posterConfiguratorPreset declaration
   const backdropRatings = getRatings('backdropRatingPreferences', 'backdropRatings') ?? globalRatings;
   const thumbnailRatings =
     getRatings('thumbnailRatingPreferences', 'thumbnailRatings') ??
