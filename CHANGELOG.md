@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.55](https://github.com/realbestia1/erdb/compare/v0.4.54...v0.4.55) - 2026-05-12
+
+- Enable poster-only ranking UI and proxy keys ([de6a4d8](https://github.com/realbestia1/erdb/commit/de6a4d853b38e36525850d6c89edb21f1e02a042))
+  Restrict JustWatch ranking to poster previews: ranking params are now only applied for imageType === 'poster' and the Ranking panel in the workspace is shown only when previewType is 'poster'. Add ranking keys to the proxy/ERDB config (ranking, rankingCountry, rankingNoBox) so the addon proxy supports the new options. Change default ranking state to 'on' and initialize new profiles with ranking enabled. Also bump package version to 0.4.55 (package.json + package-lock.json) and include minor JSX/formatting cleanups in the workspace controls panel.
+
 ## [0.4.54](https://github.com/realbestia1/erdb/compare/v0.4.53...v0.4.54) - 2026-05-12
 
 - Bump app version and update image vignette ([0f7977a](https://github.com/realbestia1/erdb/commit/0f7977a3ed84f5a8a2f14820af90a7a3542880b0))
