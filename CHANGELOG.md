@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.54](https://github.com/realbestia1/erdb/compare/v0.4.53...v0.4.54) - 2026-05-12
+
+- Bump app version and update image vignette ([0f7977a](https://github.com/realbestia1/erdb/commit/0f7977a3ed84f5a8a2f14820af90a7a3542880b0))
+  Bump app version to 0.4.54 (package.json) and update UI currentVersion to match. Increment FINAL_IMAGE_RENDERER_CACHE_VERSION to v113 to force image cache invalidation. Simplify poster vignette SVG in the image renderer: replace multiple linear gradient edges and rects (and the edgeSize calculation) with a single radial gradient overlay for a cleaner vignette effect.
+
 ## [0.4.53](https://github.com/realbestia1/erdb/compare/v0.4.52...v0.4.53) - 2026-05-12
 
 - Bump release to 0.4.53; add poster vignette ([7e501af](https://github.com/realbestia1/erdb/commit/7e501afc9c46223d680b39cecea6eb227b7a75d2))
