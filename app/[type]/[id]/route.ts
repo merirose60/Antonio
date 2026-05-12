@@ -4457,11 +4457,17 @@ const buildQualityBadgeSvg = (
     const chromeExtra = chrome.strokeOpacity ? `${extra} stroke-opacity="${chrome.strokeOpacity}"` : extra;
     return baseRect(width, chrome.stroke, chrome.fill, chromeExtra);
   };
-  const plainDefs = isReferencePlain
-    ? `<defs><filter id="text-shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" /><feFlood flood-color="#000000" flood-opacity="0.80" /><feComposite in2="blur" operator="in" result="shadow" /><feOffset in="shadow" dx="0" dy="2" result="offsetShadow" /><feMerge><feMergeNode in="offsetShadow" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs>`
-    : '';
   const universalStroke = ' stroke="rgba(0,0,0,0.80)" stroke-width="1.8" paint-order="stroke fill"';
-  const filterAttr = isReferencePlain ? ` filter="url(#text-shadow)"${universalStroke}` : universalStroke;
+  
+  const generateGlowText = (attrs: string, content: string) => {
+    if (!isReferencePlain) return `<text ${attrs}${universalStroke}>${content}</text>`;
+    const glow = Array.from({ length: 8 }, (_, i) => {
+      const strokeWidth = 20 - i * 2.5;
+      const opacity = 0.05 + (i * 0.05);
+      return `<text ${attrs} fill="none" stroke="rgba(0,0,0,${opacity})" stroke-width="${strokeWidth}" stroke-linejoin="round" stroke-linecap="round">${content}</text>`;
+    }).join('\\n');
+    return `${glow}\\n<text ${attrs} fill="#f3f4f6"${universalStroke}>${content}</text>`;
+  };
 
   if (key === '4k') {
     const width = widthOverride ?? Math.round(h * 1.55);
@@ -4469,8 +4475,7 @@ const buildQualityBadgeSvg = (
       const bigSize = Math.round(h * 0.46);
       const bigY = Math.round(h * 0.64);
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
-${plainDefs}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.06em"${filterAttr}>4K</text>
+${generateGlowText(`x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="900" text-anchor="middle" letter-spacing="0.06em"`, '4K')}
 </svg>`;
       return { svg, width, height: h };
     }
@@ -4482,8 +4487,8 @@ ${plainDefs}
     const rect = buildRect(width, color);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="${color}"${filterAttr}>4K</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="${color}" letter-spacing="0.06em"${filterAttr}>ULTRA HD</text>
+<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="${color}"${universalStroke}>4K</text>
+<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="${color}" letter-spacing="0.06em"${universalStroke}>ULTRA HD</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4494,8 +4499,7 @@ ${rect}
       const textSize = Math.round(h * 0.46);
       const textY = Math.round(h * 0.64);
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
-${plainDefs}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.06em"${filterAttr}>HDR</text>
+${generateGlowText(`x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" letter-spacing="0.06em"`, 'HDR')}
 </svg>`;
       return { svg, width, height: h };
     }
@@ -4516,8 +4520,8 @@ ${plainDefs}
   </linearGradient>
 </defs>
 ${rect}
-<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="white"${filterAttr}>HDR</text>
-<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em"${filterAttr}>TRUE COLOR</text>
+<text x="${width / 2}" y="${bigY}" font-family="${fontFamily}" font-size="${bigSize}" font-weight="800" text-anchor="middle" fill="white"${universalStroke}>HDR</text>
+<text x="${width / 2}" y="${smallY}" font-family="${fontFamily}" font-size="${smallSize}" font-weight="700" text-anchor="middle" fill="#a7f3d0" letter-spacing="0.05em"${universalStroke}>TRUE COLOR</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4531,9 +4535,8 @@ ${rect}
       const bottomY = Math.round(h * 0.78);
       const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
-${plainDefs}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6"${filterAttr}>Dolby</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>VISION</text>
+${generateGlowText(`x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle"`, 'Dolby')}
+${generateGlowText(`x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"`, 'VISION')}
 </svg>`;
       return { svg, width, height: h };
     }
@@ -4545,8 +4548,8 @@ ${plainDefs}
     const rect = buildRect(width, '#e5e7eb');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>VISION</text>
+<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${universalStroke}>DOLBY</text>
+<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${universalStroke}>VISION</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4560,9 +4563,8 @@ ${rect}
       const bottomY = Math.round(h * 0.78);
       const textLength = Math.max(40, Math.floor(width - innerPadding * 2));
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
-${plainDefs}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6"${filterAttr}>Dolby</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>ATMOS</text>
+${generateGlowText(`x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="900" text-anchor="middle"`, 'Dolby')}
+${generateGlowText(`x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="900" text-anchor="middle" letter-spacing="0.14em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"`, 'ATMOS')}
 </svg>`;
       return { svg, width, height: h };
     }
@@ -4574,8 +4576,8 @@ ${plainDefs}
     const rect = buildRect(width, '#e5e7eb');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>DOLBY</text>
-<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${filterAttr}>ATMOS</text>
+<text x="${width / 2}" y="${topY}" font-family="${fontFamily}" font-size="${topSize}" font-weight="700" text-anchor="middle" fill="#e5e7eb" letter-spacing="0.18em" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${universalStroke}>DOLBY</text>
+<text x="${width / 2}" y="${bottomY}" font-family="${fontFamily}" font-size="${bottomSize}" font-weight="800" text-anchor="middle" fill="#e5e7eb" textLength="${textLength}" lengthAdjust="spacingAndGlyphs"${universalStroke}>ATMOS</text>
 </svg>`;
     return { svg, width, height: h };
   }
@@ -4586,8 +4588,7 @@ ${rect}
       const textSize = Math.round(h * 0.42);
       const textY = Math.round(h * 0.63);
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="-4 -4 ${width + 8} ${h + 8}">
-${plainDefs}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" fill="#f3f4f6" letter-spacing="0.08em"${filterAttr}>REMUX</text>
+${generateGlowText(`x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" letter-spacing="0.08em"`, 'REMUX')}
 </svg>`;
       return { svg, width, height: h };
     }
@@ -4597,7 +4598,7 @@ ${plainDefs}
     const rect = buildRect(width, color);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${rect}
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.08em"${filterAttr}>REMUX</text>
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${color}" letter-spacing="0.08em"${universalStroke}>REMUX</text>
 </svg>`;
     return { svg, width, height: h };
   }
