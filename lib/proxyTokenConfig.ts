@@ -73,6 +73,7 @@ export const buildProxyConfigFromToken = (
   mapStr('thumbnailSize', 'thumbnailSize');
   mapStr('ranking', 'ranking');
   mapStr('rankingCountry', 'rankingCountry');
+  mapStr('rankingPosition', 'rankingPosition');
   mapStr('posterSimpleRatingSource', 'posterSimpleRatingSource');
 
   if (typeof t.posterAverageRatingsEnabled === 'boolean' || typeof t.posterAverageRatingsEnabled === 'string') {

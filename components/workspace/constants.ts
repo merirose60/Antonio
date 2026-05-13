@@ -1,4 +1,4 @@
-import type { StreamBadgesSetting, QualityBadgesSide, PosterQualityBadgesPosition, VerticalBadgeContent, AiometadataEpisodeProvider, ProxySeriesMetadataProvider, ProxyEpisodeProvider, ProxyType } from '@/components/workspace/types';
+import type { StreamBadgesSetting, QualityBadgesSide, PosterQualityBadgesPosition, RankingPosition, VerticalBadgeContent, AiometadataEpisodeProvider, ProxySeriesMetadataProvider, ProxyEpisodeProvider, ProxyType } from '@/components/workspace/types';
 
 export const PROXY_TYPES: ProxyType[] = ['poster', 'backdrop', 'logo', 'thumbnail'];
 export const STREAM_BADGE_OPTIONS: Array<{ id: StreamBadgesSetting; label: string }> = [
@@ -40,6 +40,12 @@ export const RANKING_OPTIONS: Array<{ id: string; label: string }> = [
   { id: 'daily', label: 'Daily' },
   { id: 'weekly', label: 'Weekly' },
   { id: 'monthly', label: 'Monthly' },
+];
+export const RANKING_POSITION_OPTIONS: Array<{ id: RankingPosition; label: string }> = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'above-logo', label: 'Above Logo' },
+  { id: 'top', label: 'Top' },
+  { id: 'bottom', label: 'Bottom' },
 ];
 export const JUSTWATCH_COUNTRY_OPTIONS: Array<{ id: string; label: string }> = [
   { id: 'global', label: 'Global (US fallback)' },

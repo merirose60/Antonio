@@ -86,7 +86,7 @@ import { HttpError, type PhaseDurations, type RenderImageType, type RenderedImag
 import { FALLBACK_IMAGE_LANGUAGE, getDeterministicTtlMs, getTmdbLanguageFallbackChain, isImdbId, isOriginalLanguageSetting, resolveOriginalAwareImageLanguage, resolveRequestedImageLanguage } from '@/lib/routeUtils';
 import { normalizeRatingValue } from '@/lib/ratingProviderParsing';
 import { isTextlessPosterSelection, matchesImageLanguage, pickBackdropByPreference, pickByLanguageWithFallback, pickPosterByPreference, type PosterTextPreference } from '@/lib/tmdbImageSelection';
-import { ANIME_ONLY_RATING_PROVIDER_SET, LOGO_BASE_HEIGHT, RATING_PROVIDER_META, formatDisplayRatingValue, formatRatingNumber, normalizePosterQualityBadgesPosition, normalizeQualityBadgesSide, normalizeQualityBadgesStyle, normalizeStreamBadgesSetting, outputFormatToExtension, parseDisplayRatingValue, pickOutputFormat, resolvePosterQualityBadgePlacement, shouldRenderRatingValue, type BadgeKey, type RankingBadge, type RatingBadge } from '@/lib/ratingBadgeLogic';
+import { ANIME_ONLY_RATING_PROVIDER_SET, LOGO_BASE_HEIGHT, RATING_PROVIDER_META, formatDisplayRatingValue, formatRatingNumber, normalizePosterQualityBadgesPosition, normalizeQualityBadgesSide, normalizeQualityBadgesStyle, normalizeRankingPosition, normalizeStreamBadgesSetting, outputFormatToExtension, parseDisplayRatingValue, pickOutputFormat, resolvePosterQualityBadgePlacement, shouldRenderRatingValue, type BadgeKey, type RankingBadge, type RatingBadge } from '@/lib/ratingBadgeLogic';
 import { buildTransparentLogoDataUrl } from '@/lib/imageSvgText';
 
 export const runtime = 'nodejs';
@@ -175,6 +175,7 @@ export async function GET(
   const rankingNoBoxParam = tokenConfig.rankingNoBox || request.nextUrl.searchParams.get('rankingNoBox') || 'off';
   const rankingNoBox = rankingNoBoxParam === 'on' || rankingNoBoxParam === 'true' || rankingNoBoxParam === true;
   const rankingCountry = (tokenConfig.rankingCountry || request.nextUrl.searchParams.get('rankingCountry') || 'global').trim().toUpperCase();
+  const rankingPosition = normalizeRankingPosition(tokenConfig.rankingPosition || request.nextUrl.searchParams.get('rankingPosition'));
 
   const lang = tokenConfig.lang || request.nextUrl.searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
   const language = lang.split('-')[0].toLowerCase();
@@ -1405,6 +1406,7 @@ export async function GET(
         rankingParam,
         rankingCountry,
         rankingNoBox ? 'nobox' : 'box',
+        rankingPosition,
         fanartKey ? 'fanart' : 'no-fanart',
         'v1',
       ].join('|');
@@ -3638,6 +3640,7 @@ export async function GET(
           backdropColumns,
           backdropRows,
           rankingBadge,
+          rankingPosition,
           posterConfiguratorPreset,
           cacheControl: responseHeadersCacheControl,
         },

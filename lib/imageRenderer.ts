@@ -181,7 +181,11 @@ export const renderWithSharp = async (
         posterLogoSpec = null;
       }
     }
-    const hasTopElements = input.topBadges.length > 0 || input.rankingBadge != null;
+    const rankingUsesTopBand =
+      input.rankingBadge != null &&
+      ((input.rankingPosition || 'auto') === 'top' ||
+        ((input.rankingPosition || 'auto') === 'auto' && !posterTitleSpec && !posterLogoSpec));
+    const hasTopElements = input.topBadges.length > 0 || rankingUsesTopBand;
     const shouldRenderTopBlur = input.imageType === 'poster' && (posterTitleSpec || posterLogoSpec) && (input.posterConfiguratorPreset !== 'simple' || hasTopElements);
     if (shouldRenderTopBlur) {
       const blurTopBandHeight = Math.max(110, Math.round(input.outputHeight * 0.22));
@@ -283,6 +287,22 @@ export const renderWithSharp = async (
       </svg>`;
       overlays.push({ input: Buffer.from(vignetteSvg), top: 0, left: 0 });
     }
+    type OverlayRect = { left: number; top: number; width: number; height: number };
+    const posterBlockingRects: OverlayRect[] = [];
+    const addPosterBlockingRect = (left: number, top: number, width: number, height: number) => {
+      if (input.imageType !== 'poster' || width <= 0 || height <= 0) return;
+      posterBlockingRects.push({
+        left: Math.round(left),
+        top: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(height),
+      });
+    };
+    const rectsOverlap = (a: OverlayRect, b: OverlayRect) =>
+      a.left < b.left + b.width &&
+      a.left + a.width > b.left &&
+      a.top < b.top + b.height &&
+      a.top + a.height > b.top;
     const composeBadgeRow = (
       rowBadges: RatingBadge[],
       rowY: number,
@@ -547,6 +567,7 @@ export const renderWithSharp = async (
           contentLayout: rowContentLayout,
         });
         overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
+        addPosterBlockingRect(rowX, rowY, entry.badgeWidth, rowBadgeHeight);
         rowX += entry.badgeWidth + rowGap;
       }
     };
@@ -594,6 +615,7 @@ export const renderWithSharp = async (
         Math.round((input.outputWidth - overlay.width) / 2)
       );
       overlays.push({ input: overlay.buffer, top: overlayY, left: overlayX });
+      addPosterBlockingRect(overlayX, overlayY, overlay.width, overlay.height);
       lastOverlayTopY = overlayY;
       lastOverlayBottomY = overlayY + overlay.height;
       lastOverlayAnchorY = overlayAnchorY;
@@ -667,6 +689,7 @@ export const renderWithSharp = async (
         contentLayout,
       });
       overlays.push({ input: Buffer.from(badgeSvg), top, left });
+      addPosterBlockingRect(left, top, badgeWidth, badgeHeightForLayout);
       return { width: badgeWidth, height: badgeHeightForLayout };
     };
     const composePosterCenteredTopBadge = (
@@ -721,6 +744,7 @@ export const renderWithSharp = async (
           contentLayout: 'standard',
         });
         overlays.push({ input: Buffer.from(badgeSvg), top: input.badgeTopOffset, left: rowX });
+        addPosterBlockingRect(rowX, input.badgeTopOffset, badgeWidth, topBadgeHeight);
         return;
       }
 
@@ -963,6 +987,7 @@ export const renderWithSharp = async (
             ? Math.max(12, input.outputWidth - badgeWidth - 12)
             : 12;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
+        addPosterBlockingRect(rowX, rowY, badgeWidth, badgeHeightForRow);
         rowY += badgeHeightForRow + qualityGap;
       }
     };
@@ -1010,6 +1035,7 @@ export const renderWithSharp = async (
         );
         if (!spec) continue;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: rowX });
+        addPosterBlockingRect(rowX, rowY, badgeWidth, spec.height);
         rowX += badgeWidth + rowGap;
       }
       return qualityHeight;
@@ -1038,6 +1064,7 @@ export const renderWithSharp = async (
         );
         if (!spec) continue;
         overlays.push({ input: Buffer.from(spec.svg), top: rowY, left: clampedX });
+        addPosterBlockingRect(clampedX, rowY, uniformBadgeWidth, spec.height);
         rowY += spec.height + input.badgeGap;
       }
     };
@@ -1529,31 +1556,103 @@ export const renderWithSharp = async (
             .toBuffer()
           : Buffer.from(rankingSpec.svg);
       const left = Math.max(12, Math.floor((input.outputWidth - renderedWidth) / 2));
-      let top = input.badgeTopOffset;
       const rankingGap = Math.max(3, Math.round(input.badgeGap * 0.35));
-      if (input.topBadges.length > 0) {
-        top = Math.max(top, input.badgeTopOffset + verticalBadgeHeight + rankingGap);
-      }
-      if (input.qualityBadges.length > 0) {
-        const qualityPlacement = resolvePosterQualityBadgePlacement(
-          input.posterRatingsLayout,
-          input.qualityBadgesSide,
-          input.posterQualityBadgesPosition
-        );
-        if (qualityPlacement === 'top' && input.posterConfiguratorPreset !== 'simple') {
-          const topQualityHeight = Math.max(36, Math.round(posterReferenceBadgeHeight * 1.05));
-          top = Math.max(top, input.badgeTopOffset + topQualityHeight + rankingGap);
+      const getTopRankingTop = () => {
+        let nextTop = input.badgeTopOffset;
+        if (input.topBadges.length > 0) {
+          nextTop = Math.max(nextTop, input.badgeTopOffset + verticalBadgeHeight + rankingGap);
         }
-      }
-
-      if (lastOverlayTopY > 0) {
+        if (input.qualityBadges.length > 0) {
+          const qualityPlacement = resolvePosterQualityBadgePlacement(
+            input.posterRatingsLayout,
+            input.qualityBadgesSide,
+            input.posterQualityBadgesPosition
+          );
+          if (qualityPlacement === 'top' && input.posterConfiguratorPreset !== 'simple') {
+            const topQualityHeight = Math.max(36, Math.round(posterReferenceBadgeHeight * 1.05));
+            nextTop = Math.max(nextTop, input.badgeTopOffset + topQualityHeight + rankingGap);
+          }
+        }
+        return nextTop;
+      };
+      const getAboveLogoRankingTop = () => {
+        if (lastOverlayTopY <= 0) return getTopRankingTop();
         const overlayGap = Math.max(8, Math.round(posterReferenceBadgeGap * 0.9));
-        const idealTop = lastOverlayTopY - renderedHeight - overlayGap;
-        top = Math.max(top, idealTop);
+        return Math.max(input.badgeTopOffset, lastOverlayTopY - renderedHeight - overlayGap);
+      };
+      const getBottomRankingTop = () => {
+        const overlapGap = Math.max(8, Math.round(posterReferenceBadgeGap * 0.9));
+        let bottomLimit = Math.max(
+          input.badgeTopOffset,
+          input.outputHeight - input.badgeBottomOffset - renderedHeight
+        );
+        if (input.bottomBadges.length > 0) {
+          bottomLimit = Math.min(
+            bottomLimit,
+            input.outputHeight - input.badgeBottomOffset - badgeHeight - rankingGap - renderedHeight
+          );
+        }
+        if (lastOverlayTopY > 0) {
+          const lowerCenterStackTop =
+            lastPosterQualityTopY > 0 && lastPosterQualityTopY < lastOverlayTopY
+              ? lastPosterQualityTopY
+              : lastOverlayTopY;
+          bottomLimit = Math.min(bottomLimit, lowerCenterStackTop - renderedHeight - overlapGap);
+        }
+        let nextTop = bottomLimit;
+        const getRankingRect = (topValue: number): OverlayRect => ({
+          left,
+          top: topValue,
+          width: renderedWidth,
+          height: renderedHeight,
+        });
+        for (let guard = 0; guard < 8; guard += 1) {
+          const rankingRect = getRankingRect(nextTop);
+          const collidingRects = posterBlockingRects.filter((rect) => rectsOverlap(rankingRect, rect));
+          if (collidingRects.length === 0) break;
+          const belowTop = Math.max(
+            nextTop,
+            ...collidingRects.map((rect) => rect.top + rect.height + overlapGap)
+          );
+          if (belowTop <= bottomLimit) {
+            nextTop = belowTop;
+            continue;
+          }
+          nextTop = Math.min(
+            nextTop,
+            ...collidingRects.map((rect) => rect.top - renderedHeight - overlapGap)
+          );
+        }
+        if (
+          lastPosterQualityTopY > 0 &&
+          nextTop < lastPosterQualityBottomY &&
+          nextTop + renderedHeight > lastPosterQualityTopY
+        ) {
+          nextTop = Math.min(nextTop, lastPosterQualityTopY - renderedHeight - rankingGap);
+        }
+        return nextTop;
+      };
+      const rankingPosition = input.rankingPosition || 'auto';
+      let top =
+        rankingPosition === 'bottom'
+          ? getBottomRankingTop()
+          : rankingPosition === 'above-logo'
+            ? getAboveLogoRankingTop()
+            : getTopRankingTop();
+      if (rankingPosition === 'auto' && lastOverlayTopY > 0) {
+        top = Math.max(top, getAboveLogoRankingTop());
       }
-      if (lastPosterQualityTopY > 0 && top < lastPosterQualityBottomY && top + renderedHeight > lastPosterQualityTopY) {
+      if (
+        rankingPosition !== 'bottom' &&
+        lastPosterQualityTopY > 0 &&
+        top < lastPosterQualityBottomY &&
+        top + renderedHeight > lastPosterQualityTopY
+      ) {
         top = Math.max(input.badgeTopOffset, lastPosterQualityTopY - renderedHeight - rankingGap);
       }
+      const minTop = input.badgeTopOffset;
+      const maxTop = Math.max(minTop, input.outputHeight - input.badgeBottomOffset - renderedHeight);
+      top = Math.max(minTop, Math.min(Math.round(top), maxTop));
       overlays.push({ input: rankingBuffer, top, left });
     }
 

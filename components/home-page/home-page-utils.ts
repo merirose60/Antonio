@@ -26,6 +26,7 @@ import {
 } from '@/lib/ratingStyle';
 import type { LogoMode } from '@/lib/logoMode';
 import type { LogoFontVariant } from '@/lib/logoFontVariant';
+import type { RankingPosition } from '@/lib/ratingBadgeLogic';
 import {
   getTmdbLanguageBase,
   normalizeTmdbLanguageCode,
@@ -321,6 +322,7 @@ export const buildAiometadataPattern = (options: {
   ranking: string;
   rankingCountry: string;
   rankingNoBox?: boolean;
+  rankingPosition: RankingPosition;
 }) => {
   const {
     baseUrl,
@@ -377,6 +379,7 @@ export const buildAiometadataPattern = (options: {
     ranking,
     rankingCountry,
     rankingNoBox,
+    rankingPosition,
   } = options;
 
   if (!baseUrl) {
@@ -404,6 +407,9 @@ export const buildAiometadataPattern = (options: {
     }
     if (rankingNoBox) {
       params.push(['rankingNoBox', 'on']);
+    }
+    if (rankingPosition !== 'auto') {
+      params.push(['rankingPosition', rankingPosition]);
     }
   }
 
@@ -567,6 +573,7 @@ export const buildAiometadataPatternBlock = (options: {
     if (config.rankingNoBox === 'on' || config.rankingNoBox === true) {
       params.push(['rankingNoBox', 'on']);
     }
+    pushIfString('rankingPosition');
   }
 
   if (options.imageType !== 'thumbnail') {

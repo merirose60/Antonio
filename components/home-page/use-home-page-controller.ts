@@ -83,6 +83,7 @@ import {
   RATING_STYLE_OPTIONS,
   type RatingStyle,
 } from '@/lib/ratingStyle';
+import { normalizeRankingPosition, type RankingPosition } from '@/lib/ratingBadgeLogic';
 import {
   buildSupportedLanguageList,
   getTmdbLanguageBase,
@@ -249,6 +250,7 @@ export function useHomePageController({
   const [rankingCountry, setRankingCountry] = useState('global');
   const [rankingCountryTouched, setRankingCountryTouched] = useState(false);
   const [rankingNoBox, setRankingNoBox] = useState(false);
+  const [rankingPosition, setRankingPosition] = useState<RankingPosition>('auto');
   const updateRankingCountry = useCallback((value: SetStateAction<string>) => {
     setRankingCountryTouched(true);
     setRankingCountry(value);
@@ -896,6 +898,9 @@ export function useHomePageController({
       if (rankingNoBox) {
         query.set('rankingNoBox', 'on');
       }
+      if (rankingPosition !== 'auto') {
+        query.set('rankingPosition', rankingPosition);
+      }
     }
 
     if (!baseUrl) {
@@ -965,6 +970,7 @@ export function useHomePageController({
     ranking,
     effectiveRankingCountry,
     rankingNoBox,
+    rankingPosition,
   ]);
 
   const configString = useMemo(() => {
@@ -1138,6 +1144,9 @@ export function useHomePageController({
       if (rankingNoBox) {
         config.rankingNoBox = 'on';
       }
+      if (rankingPosition !== 'auto') {
+        config.rankingPosition = rankingPosition;
+      }
     }
 
     return encodeBase64Url(JSON.stringify(config));
@@ -1202,6 +1211,7 @@ export function useHomePageController({
     ranking,
     effectiveRankingCountry,
     rankingNoBox,
+    rankingPosition,
   ]);
 
   const proxyUrl = useMemo(() => {
@@ -1437,6 +1447,9 @@ export function useHomePageController({
       if (rankingNoBox) {
         config.rankingNoBox = 'on';
       }
+      if (rankingPosition !== 'auto') {
+        config.rankingPosition = rankingPosition;
+      }
     }
     if (isAiometadataManifest) {
       config.aiometadataProvider = proxyAiometadataProvider;
@@ -1517,6 +1530,7 @@ export function useHomePageController({
     ranking,
     effectiveRankingCountry,
     rankingNoBox,
+    rankingPosition,
   ]);
 
   const aiometadataPatterns = useMemo(() => {
@@ -1730,6 +1744,7 @@ export function useHomePageController({
       ranking,
       rankingCountry: effectiveRankingCountry,
       rankingNoBox,
+      rankingPosition,
     };
 
     if (includeKeys) {
@@ -1882,6 +1897,9 @@ export function useHomePageController({
       setRankingNoBox(payload.rankingNoBox);
     } else if (payload.rankingNoBox === 'on') {
       setRankingNoBox(true);
+    }
+    if (typeof payload.rankingPosition === 'string') {
+      setRankingPosition(normalizeRankingPosition(payload.rankingPosition));
     }
     if (typeof payload.posterRatingsLayout === 'string' && isPosterRatingLayout(payload.posterRatingsLayout)) {
       setPosterRatingsLayout(payload.posterRatingsLayout);
@@ -2164,6 +2182,7 @@ export function useHomePageController({
       ranking,
       rankingCountry: effectiveRankingCountry,
       rankingNoBox: rankingNoBox ? 'on' : undefined,
+      rankingPosition,
     };
     safeLocalStorageSet(PREVIEW_CONFIG_STORAGE_KEY, JSON.stringify(payload));
   }, [
@@ -2226,6 +2245,7 @@ export function useHomePageController({
     ranking,
     effectiveRankingCountry,
     rankingNoBox,
+    rankingPosition,
   ]);
 
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -2322,6 +2342,7 @@ export function useHomePageController({
       ranking,
       rankingCountry: effectiveRankingCountry,
       rankingNoBox,
+      rankingPosition,
     }),
     [
       effectiveLang,
@@ -2377,6 +2398,7 @@ export function useHomePageController({
       ranking,
       effectiveRankingCountry,
       rankingNoBox,
+      rankingPosition,
     ]
   );
 
@@ -2434,6 +2456,7 @@ export function useHomePageController({
       ranking,
       rankingCountry: effectiveRankingCountry,
       rankingNoBox: rankingNoBox ? 'on' : undefined,
+      rankingPosition,
     }),
     [
       effectiveLang,
@@ -2487,6 +2510,7 @@ export function useHomePageController({
       ranking,
       effectiveRankingCountry,
       rankingNoBox,
+      rankingPosition,
     ]
   );
 
@@ -2682,6 +2706,7 @@ export function useHomePageController({
       ranking,
       rankingCountry: effectiveRankingCountry,
       rankingNoBox,
+      rankingPosition,
     },
     derived: {
       baseUrl,
@@ -2852,6 +2877,7 @@ export function useHomePageController({
       setRanking,
       setRankingCountry: updateRankingCountry,
       setRankingNoBox,
+      setRankingPosition,
     },
   };
 

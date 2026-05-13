@@ -28,6 +28,7 @@ import {
   INNER_PANEL_CLASS,
   CONFIG_PANEL_CLASS,
   RANKING_OPTIONS,
+  RANKING_POSITION_OPTIONS,
   JUSTWATCH_COUNTRY_OPTIONS,
 } from './constants';
 
@@ -74,6 +75,7 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
     ranking,
     rankingCountry,
     rankingNoBox,
+    rankingPosition,
   } = state;
 
   const {
@@ -135,6 +137,7 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
     setRanking,
     setRankingCountry,
     setRankingNoBox,
+    setRankingPosition,
   } = actions;
 
   const shouldShowVerticalBadgeContent =
@@ -608,6 +611,16 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
               <AnimatePresence>
                 {ranking !== 'off' && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-hidden">
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Position</h4>
+                      <div className={SEGMENT_CLASS + " bg-black/40 inline-flex flex-wrap"}>
+                        {RANKING_POSITION_OPTIONS.map(option => (
+                          <button key={option.id} onClick={() => setRankingPosition(option.id)} className={`px-4 py-2.5 rounded-lg text-xs font-semibold transition-all ${rankingPosition === option.id ? 'bg-orange-500/20 text-orange-200' : 'text-slate-400 hover:text-slate-200'}`}>
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-3">
                         <h4 className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Chart Country</h4>

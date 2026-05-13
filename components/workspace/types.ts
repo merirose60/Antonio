@@ -11,6 +11,7 @@ import type { PosterRatingLayout } from '@/lib/posterRatingLayout';
 import type { RatingStyle } from '@/lib/ratingStyle';
 import type { LogoMode } from '@/lib/logoMode';
 import type { LogoFontVariant } from '@/lib/logoFontVariant';
+import type { RankingPosition } from '@/lib/ratingBadgeLogic';
 
 export type PreviewType = 'poster' | 'backdrop' | 'logo' | 'thumbnail';
 export type ProxyType = PreviewType;
@@ -18,6 +19,7 @@ export type ProxyEnabledTypes = Record<ProxyType, boolean>;
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
+export type { RankingPosition };
 export type PosterConfiguratorPreset = 'simple' | 'advanced';
 export type AiometadataPatternType = 'poster' | 'background' | 'logo' | 'episodeThumbnail';
 export type AiometadataEpisodeProvider = 'tvdb' | 'realimdb';
@@ -87,6 +89,7 @@ export type HomePageViewState = {
   ranking: string;
   rankingCountry: string;
   rankingNoBox: boolean;
+  rankingPosition: RankingPosition;
 };
 
 export type HomePageViewDerived = {
@@ -184,6 +187,7 @@ export type HomePageViewActions = {
   setRanking: Dispatch<SetStateAction<string>>;
   setRankingCountry: Dispatch<SetStateAction<string>>;
   setRankingNoBox: Dispatch<SetStateAction<boolean>>;
+  setRankingPosition: Dispatch<SetStateAction<RankingPosition>>;
 };
 
 export type HomePageViewProps = {

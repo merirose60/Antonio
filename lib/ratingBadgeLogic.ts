@@ -7,6 +7,7 @@ export type RenderImageType = 'poster' | 'backdrop' | 'logo' | 'thumbnail';
 export type BadgeKey = RatingPreference | StreamBadgeKey | 'average' | 'ranking';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
+export type RankingPosition = 'auto' | 'top' | 'bottom' | 'above-logo';
 export type StreamQualityFlags = {
   has4k: boolean;
   hasHdr: boolean;
@@ -140,6 +141,16 @@ export const normalizePosterQualityBadgesPosition = (value?: string | null): Pos
   if (!normalized || normalized === 'auto' || normalized === 'default') return 'auto';
   if (['right', 'r', 'end'].includes(normalized)) return 'right';
   if (['left', 'l', 'start'].includes(normalized)) return 'left';
+  return 'auto';
+};
+export const normalizeRankingPosition = (value?: string | null): RankingPosition => {
+  const normalized = (value || '').trim().toLowerCase().replace(/[_\s]+/g, '-');
+  if (!normalized || normalized === 'auto' || normalized === 'default') return 'auto';
+  if (['top', 't', 'up'].includes(normalized)) return 'top';
+  if (['bottom', 'bot', 'b', 'down'].includes(normalized)) return 'bottom';
+  if (['above-logo', 'above-clean', 'above-poster-text', 'logo', 'clean'].includes(normalized)) {
+    return 'above-logo';
+  }
   return 'auto';
 };
 export const resolvePosterQualityBadgePlacement = (
