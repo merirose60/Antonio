@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.62](https://github.com/realbestia1/erdb/compare/v0.4.61...v0.4.62) - 2026-05-13
+
+- Add rankingPosition option and badge positioning ([3756b18](https://github.com/realbestia1/erdb/commit/3756b186313e52413b175ec6b0815238967b0335))
+  Introduce a new RankingPosition option (auto/top/bottom/above-logo) and thread it through the app: types, normalization, token/config mapping, UI controls, aiometadata patterns, and runtime route handling. The image renderer was enhanced to honor rankingPosition when placing the ranking badge: new collision-avoidance logic (posterBlockingRects, rectsOverlap) and dedicated top calculation paths for top/above-logo/bottom/auto ensure badges don't overlap other overlays or quality badges. Also add UI options for selecting position and include rankingPosition in preview/config URLs and proxy token handling. Bump package version in package.json.
+
 ## [0.4.61](https://github.com/realbestia1/erdb/compare/v0.4.58...v0.4.61) - 2026-05-13
 
 - Balance badges for left-right layout ([cd7a24f](https://github.com/realbestia1/erdb/commit/cd7a24fa1cfaeb2021126d78786b96d0817b48ed))
