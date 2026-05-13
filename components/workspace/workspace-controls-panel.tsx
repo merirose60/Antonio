@@ -306,6 +306,41 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
         {/* STYLES AND TEXTS BLOCK */}
         {!(previewType === 'poster' && posterConfiguratorPreset === 'simple') && (
           <motion.div layout className={`${INNER_PANEL_CLASS} p-5 space-y-5`}>
+            {/* LAYOUT SECTION */}
+            {previewType === 'poster' && (
+              <div className="space-y-4">
+                <h3 className="text-xs font-medium text-slate-300">Poster Layout</h3>
+                <div className="flex flex-wrap gap-2">
+                  {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
+                    <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`${BUTTON_BASE_CLASS} ${posterRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {isVerticalPosterRatingLayout(posterRatingsLayout) && (
+                  <div className="flex items-center gap-3 pt-2">
+                    <span className="text-xs font-medium text-slate-400">Max / Side</span>
+                    <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
+                    <button onClick={() => setPosterRatingsMaxPerSide(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
+                  </div>
+                )}
+                {shouldShowVerticalBadgeContent && (
+                  <div className="pt-2 space-y-3">
+                    <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
+                        <button key={option.id} onClick={() => setPosterVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {previewType === 'poster' && <div className="h-px bg-white/5 mx-[-20px] my-2" />}
+
             <div>
               <h3 className="text-xs font-medium text-slate-300 mb-3">{styleLabel}</h3>
               <div className={BUTTON_GROUP_CONTAINER_CLASS}>
@@ -331,7 +366,10 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
                 </div>
                 {previewType === 'poster' && (
                   <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                    <h3 className="text-xs font-medium text-slate-300 mb-3">Poster Text (Anime)</h3>
+                    <h3 className="text-xs font-medium text-slate-300 mb-1">Poster Text (Anime)</h3>
+                    <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                      Works for Kitsu/MAL IDs (separate seasons). Does not work with IMDB, TMDB or TVDB.
+                    </p>
                     <div className={BUTTON_GROUP_CONTAINER_CLASS}>
                       {(['default', 'clean', 'alternative'] as const).map(option => (
                         <button key={option} onClick={() => setPosterAnimeImageText(option)} className={`${BUTTON_BASE_CLASS} ${posterAnimeImageText === option ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
@@ -355,188 +393,161 @@ export function WorkspaceControlsPanel({ state, derived, actions }: WorkspaceCon
                 )}
               </motion.div>
             )}
-          </motion.div>
-        )}
 
-        {previewType === 'poster' && posterConfiguratorPreset !== 'simple' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`${INNER_PANEL_CLASS} p-5 space-y-4`}>
-            <h3 className="text-xs font-medium text-slate-300">Poster Layout</h3>
-            <div className="flex flex-wrap gap-2">
-              {POSTER_RATING_LAYOUT_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => setPosterRatingsLayout(opt.id as PosterRatingLayout)} className={`${BUTTON_BASE_CLASS} ${posterRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {isVerticalPosterRatingLayout(posterRatingsLayout) && (
-              <div className="flex items-center gap-3 pt-2">
-                <span className="text-xs font-medium text-slate-400">Max / Side</span>
-                <input type="number" value={posterRatingsMaxPerSide ?? ''} onChange={(e) => setPosterRatingsMaxPerSide(e.target.value === '' ? null : parseInt(e.target.value))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
-                <button onClick={() => setPosterRatingsMaxPerSide(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
-              </div>
-            )}
-            {shouldShowVerticalBadgeContent && (
-              <div className="pt-2 space-y-3">
-                <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
+            {/* OTHERS: Layout Section (after Style) */}
+            {previewType === 'backdrop' && (
+              <div className="space-y-4 pt-2">
+                <div className="h-px bg-white/5 mx-[-20px] mb-5" />
+                <h3 className="text-xs font-medium text-slate-300">Backdrop Layout</h3>
                 <div className="flex flex-wrap gap-2">
-                  {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
-                    <button key={option.id} onClick={() => setPosterVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                      {option.label}
+                  {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
+                    <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`${BUTTON_BASE_CLASS} ${backdropRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                      {opt.label}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {previewType === 'backdrop' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`${INNER_PANEL_CLASS} p-5 space-y-4`}>
-            <h3 className="text-xs font-medium text-slate-300">Backdrop Layout</h3>
-            <div className="flex flex-wrap gap-2">
-              {BACKDROP_RATING_LAYOUT_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => setBackdropRatingsLayout(opt.id as BackdropRatingLayout)} className={`${BUTTON_BASE_CLASS} ${backdropRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="pt-2 space-y-3">
-              <h3 className="text-xs font-medium text-slate-300">Ratings Size</h3>
-              <div className="flex flex-wrap gap-2">
-                {BACKDROP_RATINGS_SIZE_OPTIONS.map(opt => (
-                  <button key={opt.id} onClick={() => setBackdropRatingsSize(opt.id as BackdropRatingsSize)} className={`${BUTTON_BASE_CLASS} ${backdropRatingsSize === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {shouldShowVerticalBadgeContent && (
-              <div className="pt-2 space-y-3">
-                <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
-                <div className="flex flex-wrap gap-2">
-                  {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
-                    <button key={option.id} onClick={() => setBackdropVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="pt-2 flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-400">Max Badges</span>
-              <input type="number" min={1} max={20} value={backdropRatingsMax ?? ''} onChange={(e) => setBackdropRatingsMax(e.target.value === '' ? null : parseInt(e.target.value, 10))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
-              <button onClick={() => setBackdropRatingsMax(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
-            </div>
-          </motion.div>
-        )}
-
-        {previewType === 'thumbnail' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`${INNER_PANEL_CLASS} p-5 space-y-4`}>
-            <h3 className="text-xs font-medium text-slate-300">Thumbnail Layout</h3>
-            <div className="flex flex-wrap gap-2">
-              {THUMBNAIL_RATING_LAYOUT_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => setThumbnailRatingsLayout(opt.id as ThumbnailRatingLayout)} className={`${BUTTON_BASE_CLASS} ${thumbnailRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <div className="pt-2 space-y-3">
-              <h3 className="text-xs font-medium text-slate-300">Thumbnail Size</h3>
-              <div className="flex flex-wrap gap-2">
-                {THUMBNAIL_SIZE_OPTIONS.map(opt => (
-                  <button key={opt.id} onClick={() => setThumbnailSize(opt.id as ThumbnailSize)} className={`${BUTTON_BASE_CLASS} ${thumbnailSize === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {shouldShowVerticalBadgeContent && (
-              <div className="pt-2 space-y-3">
-                <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
-                <div className="flex flex-wrap gap-2">
-                  {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
-                    <button key={option.id} onClick={() => setThumbnailVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {previewType === 'logo' && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className={`${INNER_PANEL_CLASS} p-5 space-y-4`}>
-            <h3 className="text-xs font-medium text-slate-300">Logo Mode</h3>
-            <div className="flex flex-wrap gap-2">
-              {LOGO_MODE_OPTIONS.map((option) => (
-                <button key={option.id} onClick={() => setLogoMode(option.id)} className={`${BUTTON_BASE_CLASS} ${logoMode === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            <AnimatePresence mode="popLayout">
-              {logoMode === 'custom-logo' && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-4 pt-2">
-                  <h3 className="text-xs font-medium text-slate-300">Logo Font</h3>
+                <div className="pt-2 space-y-3">
+                  <h3 className="text-xs font-medium text-slate-300">Ratings Size</h3>
                   <div className="flex flex-wrap gap-2">
-                    {LOGO_FONT_VARIANT_OPTIONS.map((option) => (
-                      <button key={option.id} onClick={() => setLogoFontVariant(option.id)} className={`${BUTTON_BASE_CLASS} ${logoFontVariant === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
-                        {option.label}
+                    {BACKDROP_RATINGS_SIZE_OPTIONS.map(opt => (
+                      <button key={opt.id} onClick={() => setBackdropRatingsSize(opt.id as BackdropRatingsSize)} className={`${BUTTON_BASE_CLASS} ${backdropRatingsSize === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                        {opt.label}
                       </button>
                     ))}
                   </div>
-
-                  <div className="grid gap-3 lg:grid-cols-3 pt-2">
-                    <label className="space-y-2">
-                      <span className="text-xs font-medium text-slate-400">Primary</span>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <input type="color" value={logoCustomPrimary} onChange={(e) => setLogoCustomPrimary(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
-                        <input type="text" value={logoCustomPrimary} onChange={(e) => setLogoCustomPrimary(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
-                      </div>
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-xs font-medium text-slate-400">Secondary</span>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <input type="color" value={logoCustomSecondary} onChange={(e) => setLogoCustomSecondary(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
-                        <input type="text" value={logoCustomSecondary} onChange={(e) => setLogoCustomSecondary(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
-                      </div>
-                    </label>
-                    <label className="space-y-2">
-                      <span className="text-xs font-medium text-slate-400">Outline</span>
-                      <div className="flex min-w-0 items-center gap-2">
-                        <input type="color" value={logoCustomOutline} onChange={(e) => setLogoCustomOutline(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
-                        <input type="text" value={logoCustomOutline} onChange={(e) => setLogoCustomOutline(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
-                      </div>
-                    </label>
-                  </div>
-
-                  <div className="space-y-3 pt-2">
-                    <h3 className="text-xs font-medium text-slate-300">Color Presets</h3>
+                </div>
+                {shouldShowVerticalBadgeContent && (
+                  <div className="pt-2 space-y-3">
+                    <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
                     <div className="flex flex-wrap gap-2">
-                      {LOGO_COLOR_PRESETS.map((preset) => (
-                        <button key={preset.id} onClick={() => { setLogoCustomPrimary(preset.primary); setLogoCustomSecondary(preset.secondary); setLogoCustomOutline(preset.outline); }} className={`${BUTTON_BASE_CLASS} ${BUTTON_INACTIVE_CLASS} px-3 py-2`}>
-                          <span className="inline-flex items-center gap-2">
-                            <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.primary }} />
-                            <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.secondary }} />
-                            <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.outline }} />
-                          </span>
+                      {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
+                        <button key={option.id} onClick={() => setBackdropVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                          {option.label}
                         </button>
                       ))}
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                )}
+                <div className="pt-2 flex items-center gap-3">
+                  <span className="text-xs font-medium text-slate-400">Max Badges</span>
+                  <input type="number" min={1} max={20} value={backdropRatingsMax ?? ''} onChange={(e) => setBackdropRatingsMax(e.target.value === '' ? null : parseInt(e.target.value, 10))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
+                  <button onClick={() => setBackdropRatingsMax(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
+                </div>
+              </div>
+            )}
 
-            <div className="pt-2 flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-400">Max Badges</span>
-              <input type="number" min={1} max={20} value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(e.target.value === '' ? null : parseInt(e.target.value, 10))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
-              <button onClick={() => setLogoRatingsMax(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
-            </div>
+            {previewType === 'thumbnail' && (
+              <div className="space-y-4 pt-2">
+                <div className="h-px bg-white/5 mx-[-20px] mb-5" />
+                <h3 className="text-xs font-medium text-slate-300">Thumbnail Layout</h3>
+                <div className="flex flex-wrap gap-2">
+                  {THUMBNAIL_RATING_LAYOUT_OPTIONS.map(opt => (
+                    <button key={opt.id} onClick={() => setThumbnailRatingsLayout(opt.id as ThumbnailRatingLayout)} className={`${BUTTON_BASE_CLASS} ${thumbnailRatingsLayout === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="pt-2 space-y-3">
+                  <h3 className="text-xs font-medium text-slate-300">Thumbnail Size</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {THUMBNAIL_SIZE_OPTIONS.map(opt => (
+                      <button key={opt.id} onClick={() => setThumbnailSize(opt.id as ThumbnailSize)} className={`${BUTTON_BASE_CLASS} ${thumbnailSize === opt.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {shouldShowVerticalBadgeContent && (
+                  <div className="pt-2 space-y-3">
+                    <h3 className="text-xs font-medium text-slate-300">Vertical Badge Style</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {VERTICAL_BADGE_CONTENT_OPTIONS.map(option => (
+                        <button key={option.id} onClick={() => setThumbnailVerticalBadgeContent(option.id)} className={`${BUTTON_BASE_CLASS} ${activeVerticalBadgeContent === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {previewType === 'logo' && (
+              <div className="space-y-4 pt-2">
+                <div className="h-px bg-white/5 mx-[-20px] mb-5" />
+                <h3 className="text-xs font-medium text-slate-300">Logo Mode</h3>
+                <div className="flex flex-wrap gap-2">
+                  {LOGO_MODE_OPTIONS.map((option) => (
+                    <button key={option.id} onClick={() => setLogoMode(option.id)} className={`${BUTTON_BASE_CLASS} ${logoMode === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+
+                <AnimatePresence mode="popLayout">
+                  {logoMode === 'custom-logo' && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-4 pt-2">
+                      <h3 className="text-xs font-medium text-slate-300">Logo Font</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {LOGO_FONT_VARIANT_OPTIONS.map((option) => (
+                          <button key={option.id} onClick={() => setLogoFontVariant(option.id)} className={`${BUTTON_BASE_CLASS} ${logoFontVariant === option.id ? BUTTON_ACTIVE_CLASS : BUTTON_INACTIVE_CLASS}`}>
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="grid gap-3 lg:grid-cols-3 pt-2">
+                        <label className="space-y-2">
+                          <span className="text-xs font-medium text-slate-400">Primary</span>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <input type="color" value={logoCustomPrimary} onChange={(e) => setLogoCustomPrimary(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
+                            <input type="text" value={logoCustomPrimary} onChange={(e) => setLogoCustomPrimary(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
+                          </div>
+                        </label>
+                        <label className="space-y-2">
+                          <span className="text-xs font-medium text-slate-400">Secondary</span>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <input type="color" value={logoCustomSecondary} onChange={(e) => setLogoCustomSecondary(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
+                            <input type="text" value={logoCustomSecondary} onChange={(e) => setLogoCustomSecondary(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
+                          </div>
+                        </label>
+                        <label className="space-y-2">
+                          <span className="text-xs font-medium text-slate-400">Outline</span>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <input type="color" value={logoCustomOutline} onChange={(e) => setLogoCustomOutline(e.target.value)} className="h-10 w-14 shrink-0 cursor-pointer rounded-lg border border-white/10 bg-transparent p-1" />
+                            <input type="text" value={logoCustomOutline} onChange={(e) => setLogoCustomOutline(e.target.value)} className={`min-w-0 flex-1 ${INPUT_CLASS}`} />
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <h3 className="text-xs font-medium text-slate-300">Color Presets</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {LOGO_COLOR_PRESETS.map((preset) => (
+                            <button key={preset.id} onClick={() => { setLogoCustomPrimary(preset.primary); setLogoCustomSecondary(preset.secondary); setLogoCustomOutline(preset.outline); }} className={`${BUTTON_BASE_CLASS} ${BUTTON_INACTIVE_CLASS} px-3 py-2`}>
+                              <span className="inline-flex items-center gap-2">
+                                <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.primary }} />
+                                <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.secondary }} />
+                                <span className="h-3 w-3 rounded-full border border-white/10" style={{ backgroundColor: preset.outline }} />
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="pt-2 flex items-center gap-3">
+                  <span className="text-xs font-medium text-slate-400">Max Badges</span>
+                  <input type="number" min={1} max={20} value={logoRatingsMax ?? ''} onChange={(e) => setLogoRatingsMax(e.target.value === '' ? null : parseInt(e.target.value, 10))} placeholder="Auto" className={`w-20 ${INPUT_CLASS}`} />
+                  <button onClick={() => setLogoRatingsMax(null)} className={BUTTON_BASE_CLASS + " " + BUTTON_INACTIVE_CLASS}>Auto</button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
+
 
         {/* QUALITY BADGES */}
         {previewType !== 'logo' && previewType !== 'thumbnail' && (
