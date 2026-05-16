@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.76](https://github.com/realbestia1/erdb/compare/v0.4.75...v0.4.76) - 2026-05-16
+
+- . ([808cb4a](https://github.com/realbestia1/erdb/commit/808cb4a4d292f6ff9f7480105c787684be22e893))
+
 ## [0.4.75](https://github.com/realbestia1/erdb/compare/v0.4.74...v0.4.75) - 2026-05-16
 
 - Add compact ranking and above-logo genre ([d0c5dfa](https://github.com/realbestia1/erdb/commit/d0c5dfa8bb805b97e5bdb0b89aff7d338c1ef663))
