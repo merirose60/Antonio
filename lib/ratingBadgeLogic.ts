@@ -192,7 +192,7 @@ export const resolvePosterQualityBadgePlacement = (
 
 export const normalizeQualityBadgesStyle = (value?: string | null): RatingStyle => {
   const normalized = (value || '').trim().toLowerCase();
-  if (normalized === 'glass' || normalized === 'square' || normalized === 'plain' || normalized === 'solid-light') {
+  if (normalized === 'glass' || normalized === 'square' || normalized === 'plain') {
     return normalized;
   }
   return DEFAULT_QUALITY_BADGES_STYLE;
